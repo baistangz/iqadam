@@ -1,55 +1,393 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORT Prep - MVP</title>
+    <title>iQADAM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <style>
+        :root {
+            --blue-50: #eff6ff;
+            --blue-100: #dbeafe;
+            --blue-200: #bfdbfe;
+            --blue-400: #60a5fa;
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --slate-900: #0f172a;
+        }
 
-    <div class="max-w-3xl w-full bg-white rounded-2xl shadow-lg p-8" id="quiz-container">
-        
-        <div id="loading" class="text-center py-10">
-            <h2 class="text-2xl font-semibold text-gray-600 animate-pulse">Загрузка вопросов...</h2>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Manrope", sans-serif;
+            color: var(--slate-900);
+            min-height: 100vh;
+            background: linear-gradient(180deg, #f9fcff 0%, #f4f8ff 100%);
+            overflow-x: hidden;
+        }
+
+        .font-display {
+            font-family: "Sora", sans-serif;
+        }
+
+        .hero {
+            position: relative;
+            overflow: visible;
+            background:
+                radial-gradient(80rem 42rem at 10% -20%, rgba(191, 219, 254, 0.6), transparent 58%),
+                radial-gradient(72rem 34rem at 92% -4%, rgba(96, 165, 250, 0.28), transparent 54%),
+                linear-gradient(180deg, #eaf5ff 0%, #d8ebff 54%, #edf7ff 100%);
+        }
+
+        .mountain-layer {
+            position: absolute;
+            left: -4%;
+            right: -4%;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .mountain-bridge {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -26px;
+            height: 390px;
+            pointer-events: none;
+            z-index: 5;
+            overflow: visible;
+        }
+
+        .mountain-back {
+            height: 62%;
+            background:
+                linear-gradient(145deg, rgba(96, 165, 250, 0.42), rgba(191, 219, 254, 0.45));
+            clip-path: polygon(0 100%, 7% 76%, 15% 62%, 24% 82%, 36% 46%, 48% 80%, 59% 54%, 73% 84%, 84% 58%, 93% 78%, 100% 66%, 100% 100%);
+        }
+
+        .mountain-mid {
+            height: 51%;
+            background:
+                linear-gradient(150deg, rgba(30, 64, 175, 0.62), rgba(59, 130, 246, 0.56));
+            clip-path: polygon(0 100%, 9% 86%, 18% 58%, 29% 90%, 43% 45%, 54% 82%, 66% 52%, 77% 88%, 89% 60%, 100% 74%, 100% 100%);
+        }
+
+        .mountain-front {
+            height: 40%;
+            background:
+                linear-gradient(160deg, rgba(30, 58, 138, 0.86), rgba(37, 99, 235, 0.8));
+            clip-path: polygon(0 100%, 8% 84%, 19% 56%, 33% 90%, 46% 44%, 57% 78%, 70% 50%, 82% 86%, 93% 60%, 100% 74%, 100% 100%);
+        }
+
+        .bridge-snow {
+            position: absolute;
+            left: -4%;
+            right: -4%;
+            bottom: 41%;
+            height: 11px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.72) 18%, rgba(255, 255, 255, 0.94) 50%, rgba(255, 255, 255, 0.72) 82%, transparent 100%);
+            filter: blur(0.4px);
+            pointer-events: none;
+        }
+
+        .kyrgyz-sun {
+            position: absolute;
+            right: 12%;
+            top: 12%;
+            width: 116px;
+            height: 116px;
+            border-radius: 9999px;
+            background:
+                repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.05) 0 6deg, rgba(255, 255, 255, 0.38) 6deg 10deg),
+                radial-gradient(circle at center, #fef3c7 0%, #fde68a 55%, #fbbf24 100%);
+            box-shadow: 0 0 0 12px rgba(251, 191, 36, 0.2), 0 0 42px rgba(59, 130, 246, 0.22);
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        .eagle {
+            position: absolute;
+            right: 24%;
+            top: 22%;
+            width: 42px;
+            height: 14px;
+            transform: rotate(-6deg);
+            pointer-events: none;
+        }
+
+        .eagle svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            fill: rgba(15, 23, 42, 0.8);
+            filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.24));
+        }
+
+        .auth-lake {
+            background:
+                linear-gradient(180deg, #3f97d6 0%, #58afe3 26%, #63b8e8 50%, #4c9fdb 74%, #257fc3 100%);
+        }
+
+        .auth-lake::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.3) 0px,
+                rgba(255, 255, 255, 0.3) 1px,
+                rgba(255, 255, 255, 0) 1px,
+                rgba(255, 255, 255, 0) 14px
+            );
+            opacity: 0.38;
+        }
+
+        .lake-boat {
+            position: absolute;
+            left: clamp(10px, 7vw, 96px);
+            top: clamp(14px, 6vh, 44px);
+            width: 94px;
+            height: 46px;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0.9;
+            filter: drop-shadow(0 6px 8px rgba(13, 53, 88, 0.22));
+        }
+
+        .lake-boat svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            fill: rgba(32, 63, 93, 0.78);
+        }
+
+        .lake-boat::after {
+            content: "";
+            position: absolute;
+            left: 10px;
+            right: 8px;
+            bottom: -2px;
+            height: 6px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, transparent 0%, rgba(231, 247, 255, 0.56) 45%, rgba(231, 247, 255, 0.4) 70%, transparent 100%);
+        }
+
+        @media (max-width: 768px) {
+            .lake-boat {
+                width: 74px;
+                height: 36px;
+                left: 8px;
+                top: 10px;
+            }
+        }
+
+        .brand-mark {
+            display: inline-block;
+            font-family: "Sora", sans-serif;
+            font-size: clamp(1.2rem, 2.5vw, 1.75rem);
+            font-weight: 900;
+            letter-spacing: 0.07em;
+            color: #0a3a9c;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.32), 0 6px 16px rgba(37, 99, 235, 0.16);
+        }
+
+    </style>
+</head>
+<body>
+    <section class="hero min-h-[100svh] px-4 pt-14 md:px-8 md:pt-16" id="welcome-section">
+        <div class="kyrgyz-sun"></div>
+        <div class="relative z-10 mx-auto flex min-h-[78vh] max-w-6xl items-center">
+            <div class="max-w-2xl rounded-3xl border border-blue-100 bg-white/70 p-7 shadow-[0_32px_90px_-48px_rgba(37,99,235,0.55)] backdrop-blur-sm md:p-10">
+                <p class="brand-mark">iQADAM</p>
+                <h1 class="font-display mt-4 text-3xl font-extrabold leading-tight text-slate-900 md:text-5xl">
+                    Prepare for ORT by taking mock exams
+                </h1>
+                <p class="mt-5 text-base leading-relaxed text-slate-700 md:text-lg">
+                    Focused practice, realistic exam format, and clean progress flow so you can get test-ready with confidence.
+                </p>
+                <div class="mt-8 flex flex-wrap items-center gap-3">
+                    <a href="#auth-section" class="font-display inline-flex items-center justify-center rounded-xl bg-blue-600 px-7 py-3 text-sm font-bold text-white transition hover:bg-blue-700">
+                        Get Started
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <div id="quiz-content" class="hidden">
-            <div class="flex justify-between items-center mb-6">
-                <span id="subject-badge" class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Предмет</span>
-                <span id="progress-text" class="text-sm font-medium text-gray-500">Вопрос 1 из 30</span>
+        <div class="eagle" aria-hidden="true">
+            <svg viewBox="0 0 140 46" role="presentation" focusable="false">
+                <path d="M5 30c9-8 18-12 28-12 9 0 16 4 22 9 6-5 13-9 22-9 11 0 21 4 32 13-11-4-20-4-29-1-8 3-15 8-22 13-7-5-14-10-22-13-9-3-18-3-31 0z"/>
+            </svg>
+        </div>
+
+        <div class="mountain-bridge" id="mountain-bridge" aria-hidden="true">
+            <div class="mountain-layer mountain-back"></div>
+            <div class="mountain-layer mountain-mid"></div>
+            <div class="mountain-layer mountain-front"></div>
+            <div class="bridge-snow"></div>
+        </div>
+    </section>
+
+    <section id="auth-section" class="auth-lake relative min-h-[58svh] overflow-hidden px-4 pb-6 pt-6 md:min-h-[54svh] md:px-8 md:pb-8 md:pt-8">
+        <div class="lake-boat" aria-hidden="true">
+            <svg viewBox="0 0 200 96" role="presentation" focusable="false">
+                <path d="M16 62h152l-22 20H44L16 62z"/>
+                <path d="M90 18v44h4V18h-4zm5 4 50 34H95V22z"/>
+            </svg>
+        </div>
+
+        <div id="auth-screen" class="relative z-10 mx-auto mt-10 max-w-md rounded-2xl border border-blue-100 bg-white/96 p-6 shadow-lg backdrop-blur-sm md:mt-12 md:p-8">
+            <p class="font-display text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">Account</p>
+            <h2 class="font-display mt-2 text-2xl font-extrabold text-slate-900">Login or Register</h2>
+
+            <div class="mt-6 mb-6 grid grid-cols-2 rounded-xl bg-blue-50 p-1">
+                <button id="tab-login" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition">Login</button>
+                <button id="tab-register" class="rounded-lg px-4 py-2.5 text-sm font-medium text-blue-700 transition">Register</button>
             </div>
 
-            <h2 id="question-text" class="text-xl font-bold text-gray-800 mb-8 leading-relaxed">Текст вопроса будет здесь?</h2>
-
-            <div id="options-container" class="space-y-4 mb-8">
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                    <input id="login-email" type="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="you@example.com">
                 </div>
+                <div>
+                    <label for="login-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
+                    <input id="login-password" type="password" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="••••••••">
+                </div>
+                <div id="login-captcha" class="pt-1"></div>
+                <button type="submit" class="font-display w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Log In</button>
+            </form>
 
-            <div class="flex justify-end">
-                <button id="next-btn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    Далее
+            <form id="register-form" class="hidden space-y-4">
+                <div>
+                    <label for="register-email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                    <input id="register-email" type="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label for="register-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
+                    <input id="register-password" type="password" minlength="8" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Strong password">
+                    <p class="mt-2 text-xs text-slate-500">Use 8+ chars with upper, lower, number, and special character.</p>
+                </div>
+                <div>
+                    <label for="register-confirm-password" class="mb-1.5 block text-sm font-medium text-slate-700">Confirm Password</label>
+                    <input id="register-confirm-password" type="password" minlength="8" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Repeat your password">
+                </div>
+                <div id="register-captcha" class="pt-1"></div>
+                <button type="submit" class="font-display w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Create Account</button>
+            </form>
+
+            <p id="auth-message" class="mt-5 hidden rounded-xl px-4 py-3 text-sm"></p>
+            <div id="resend-confirmation-wrap" class="mt-3 hidden">
+                <button id="resend-confirmation-btn" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700">
+                    Resend confirmation email
                 </button>
             </div>
         </div>
+    </section>
 
-        <div id="results-screen" class="hidden text-center py-10">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Тест завершен!</h2>
-            <p class="text-lg text-gray-600 mb-8">Вы ответили на все вопросы.</p>
-            <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">
-                Пройти заново
-            </button>
+    <section id="quiz-screen" class="hidden mx-auto max-w-6xl px-4 pb-16 md:px-8">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm">
+            <div>
+                <p class="font-display text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Signed In</p>
+                <p id="user-email" class="text-sm font-semibold text-slate-800">-</p>
+            </div>
+            <button id="logout-btn" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">Log Out</button>
         </div>
 
-    </div>
+        <div id="exam-selector" class="mb-5 rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+            <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <p class="font-display text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Exam Hub</p>
+                    <h3 class="font-display mt-1 text-2xl font-extrabold text-slate-900">Choose Your Mock Exam</h3>
+                </div>
+                <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Available: Mock 19</span>
+            </div>
+            <div id="exam-grid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
+            <p id="exam-message" class="mt-4 hidden rounded-xl border px-4 py-3 text-sm"></p>
+        </div>
+
+        <div class="hidden rounded-2xl border border-blue-100 bg-white p-6 shadow-sm md:p-8" id="quiz-container">
+            <div id="loading" class="py-12 text-center">
+                <h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>
+            </div>
+
+            <div id="quiz-content" class="hidden">
+                <div class="mb-6 flex items-center justify-between gap-4">
+                    <span id="subject-badge" class="rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-blue-800">Subject</span>
+                    <span id="progress-text" class="text-sm font-semibold text-slate-500">Question 1 of 30</span>
+                </div>
+
+                <h2 id="question-text" class="font-display mb-8 text-xl font-bold leading-relaxed text-slate-900 md:text-2xl">Question text</h2>
+
+                <div id="options-container" class="mb-8 space-y-3.5"></div>
+
+                <div class="flex justify-end">
+                    <button id="next-btn" disabled class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+                </div>
+            </div>
+
+            <div id="results-screen" class="hidden py-12 text-center">
+                <h2 class="font-display mb-4 text-3xl font-extrabold text-slate-900">Test completed</h2>
+                <p class="mb-8 text-lg text-slate-600">You answered all questions.</p>
+                <button id="restart-btn" class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Try Again</button>
+            </div>
+        </div>
+    </section>
 
     <script>
-        // --- State Variables ---
+        const API_BASE = 'http://127.0.0.1:8000';
+        const ACCESS_TOKEN_KEY = 'ort_access_token';
+        const USER_EMAIL_KEY = 'ort_user_email';
+        const SELECTED_EXAM_KEY = 'ort_selected_exam';
+        const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const MOCK_EXAMS = [16, 17, 18, 19, 20, 21, 22];
+        const AVAILABLE_EXAMS = new Set([19]);
+
         let questions = [];
         let currentIndex = 0;
         let selectedAnswer = null;
-        let answers = []; // Stores user's choices
+        let answers = [];
+        let authToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+        let selectedMockExam = Number(localStorage.getItem(SELECTED_EXAM_KEY)) || null;
+        let isLoadingQuestions = false;
+        let pendingConfirmationEmail = '';
+        let captchaEnabled = false;
+        let captchaSiteKey = null;
+        let loginCaptchaToken = '';
+        let registerCaptchaToken = '';
+        let loginCaptchaWidgetId = null;
+        let registerCaptchaWidgetId = null;
 
-        // --- DOM Elements ---
+        const welcomeSection = document.getElementById('welcome-section');
+        const authSection = document.getElementById('auth-section');
+        const authScreen = document.getElementById('auth-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const examSelector = document.getElementById('exam-selector');
+        const examGrid = document.getElementById('exam-grid');
+        const examMessage = document.getElementById('exam-message');
+        const authMessage = document.getElementById('auth-message');
+        const resendWrap = document.getElementById('resend-confirmation-wrap');
+        const resendBtn = document.getElementById('resend-confirmation-btn');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginCaptchaMount = document.getElementById('login-captcha');
+        const registerCaptchaMount = document.getElementById('register-captcha');
+        const loginSubmitBtn = loginForm.querySelector('button[type="submit"]');
+        const registerSubmitBtn = registerForm.querySelector('button[type="submit"]');
+        const userEmail = document.getElementById('user-email');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const quizContainer = document.getElementById('quiz-container');
         const loadingDiv = document.getElementById('loading');
         const quizContentDiv = document.getElementById('quiz-content');
         const resultsScreenDiv = document.getElementById('results-screen');
@@ -58,30 +396,360 @@
         const progressText = document.getElementById('progress-text');
         const subjectBadge = document.getElementById('subject-badge');
         const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
 
-        // --- Fetch Data from FastAPI ---
-        async function fetchQuestions() {
-            try {
-                // Connect to your local FastAPI backend
-                const response = await fetch('http://127.0.0.1:8000/api/questions');
-                const data = await response.json();
-                
-                if(data && data.length > 0) {
-                    questions = data;
-                    startQuiz();
-                } else {
-                    loadingDiv.innerHTML = '<p class="text-red-500">Нет доступных вопросов. Загрузите базу данных.</p>';
-                }
-            } catch (error) {
-                console.error("Error fetching questions:", error);
-                loadingDiv.innerHTML = '<p class="text-red-500">Ошибка подключения к серверу.</p>';
+        function normalizeEmail(value) {
+            return value.trim().toLowerCase();
+        }
+
+        function isValidEmail(email) {
+            return EMAIL_REGEX.test(email) && email.length <= 254;
+        }
+
+        function getPasswordValidationError(password) {
+            if (password.length < 8) return 'Password must be at least 8 characters.';
+            if (!/[a-z]/.test(password)) return 'Password must include a lowercase letter.';
+            if (!/[A-Z]/.test(password)) return 'Password must include an uppercase letter.';
+            if (!/\d/.test(password)) return 'Password must include a number.';
+            if (!/[^A-Za-z0-9]/.test(password)) return 'Password must include a special character.';
+            if (/\s/.test(password)) return 'Password cannot contain spaces.';
+            if (password.length > 128) return 'Password is too long.';
+            return null;
+        }
+
+        function setButtonLoading(button, isLoading, loadingText) {
+            if (!button) return;
+            if (isLoading) {
+                if (!button.dataset.defaultLabel) button.dataset.defaultLabel = button.textContent.trim();
+                button.textContent = loadingText;
+                button.disabled = true;
+                button.classList.add('cursor-not-allowed', 'opacity-70');
+                return;
+            }
+            button.textContent = button.dataset.defaultLabel || button.textContent;
+            button.disabled = false;
+            button.classList.remove('cursor-not-allowed', 'opacity-70');
+        }
+
+        function extractApiErrorMessage(data) {
+            if (!data) return 'Request failed.';
+            if (typeof data.detail === 'string') return data.detail;
+            if (Array.isArray(data.detail)) {
+                const messages = data.detail.map((item) => item?.msg).filter(Boolean);
+                if (messages.length > 0) return messages.join(' ');
+            }
+            if (typeof data.message === 'string') return data.message;
+            return 'Request failed.';
+        }
+
+        function hideResendConfirmation() {
+            pendingConfirmationEmail = '';
+            resendWrap.classList.add('hidden');
+        }
+
+        function showResendConfirmation(email) {
+            pendingConfirmationEmail = normalizeEmail(email || '');
+            resendWrap.classList.remove('hidden');
+        }
+
+        function resetCaptcha(widgetType) {
+            if (!captchaEnabled || !window.turnstile) return;
+            if (widgetType === 'login' && loginCaptchaWidgetId !== null) {
+                window.turnstile.reset(loginCaptchaWidgetId);
+                loginCaptchaToken = '';
+            }
+            if (widgetType === 'register' && registerCaptchaWidgetId !== null) {
+                window.turnstile.reset(registerCaptchaWidgetId);
+                registerCaptchaToken = '';
             }
         }
 
-        // --- Render UI ---
+        function showExamMessage(text, type = 'info') {
+            examMessage.classList.remove('hidden', 'border-rose-200', 'bg-rose-50', 'text-rose-700', 'border-blue-200', 'bg-blue-50', 'text-blue-700', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+            if (type === 'error') {
+                examMessage.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
+            } else if (type === 'success') {
+                examMessage.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+            } else {
+                examMessage.classList.add('border-blue-200', 'bg-blue-50', 'text-blue-700');
+            }
+            examMessage.textContent = text;
+        }
+
+        function hideExamMessage() {
+            examMessage.classList.add('hidden');
+            examMessage.textContent = '';
+        }
+
+        function renderMockExamCards() {
+            examGrid.innerHTML = '';
+            for (const examNo of MOCK_EXAMS) {
+                const isAvailable = AVAILABLE_EXAMS.has(examNo);
+                const isSelected = selectedMockExam === examNo && isAvailable;
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = isSelected
+                    ? 'rounded-xl border border-blue-500 bg-blue-50 px-4 py-4 text-left shadow-sm transition'
+                    : 'rounded-xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-blue-300 hover:bg-blue-50/60';
+                card.disabled = !isAvailable;
+
+                const statusBadge = isAvailable
+                    ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Ready</span>'
+                    : '<span class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">Locked</span>';
+
+                card.innerHTML = `
+                    <p class="font-display text-lg font-bold text-slate-900">Mock Exam ${examNo}</p>
+                    <div class="mt-2">${statusBadge}</div>
+                    <p class="mt-2 text-xs text-slate-600">${isAvailable ? 'Current question bank is mapped here.' : 'Coming soon'}</p>
+                `;
+
+                if (isAvailable) {
+                    card.addEventListener('click', () => selectMockExam(examNo));
+                } else {
+                    card.classList.add('cursor-not-allowed', 'opacity-65');
+                }
+
+                examGrid.appendChild(card);
+            }
+        }
+
+        function selectMockExam(examNo) {
+            selectedMockExam = examNo;
+            localStorage.setItem(SELECTED_EXAM_KEY, String(examNo));
+            renderMockExamCards();
+            showExamMessage(`Starting Mock Exam ${examNo}...`, 'info');
+            fetchQuestions();
+        }
+
+        async function loadAuthConfig() {
+            try {
+                const config = await apiRequest('/api/auth/config');
+                captchaEnabled = Boolean(config.captcha_enabled && config.captcha_site_key);
+                captchaSiteKey = config.captcha_site_key || null;
+            } catch {
+                captchaEnabled = false;
+                captchaSiteKey = null;
+            }
+        }
+
+        async function waitForTurnstile(maxAttempts = 40, delayMs = 150) {
+            for (let i = 0; i < maxAttempts; i += 1) {
+                if (window.turnstile) return true;
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+            return false;
+        }
+
+        async function renderCaptchaWidgets() {
+            if (!captchaEnabled) {
+                loginCaptchaMount.innerHTML = '';
+                registerCaptchaMount.innerHTML = '';
+                return;
+            }
+
+            const ready = await waitForTurnstile();
+            if (!ready) {
+                showAuthMessage('Captcha failed to load. Refresh the page and try again.');
+                return;
+            }
+
+            loginCaptchaWidgetId = window.turnstile.render('#login-captcha', {
+                sitekey: captchaSiteKey,
+                theme: 'light',
+                callback: (token) => { loginCaptchaToken = token; },
+                'expired-callback': () => { loginCaptchaToken = ''; },
+                'error-callback': () => { loginCaptchaToken = ''; }
+            });
+
+            registerCaptchaWidgetId = window.turnstile.render('#register-captcha', {
+                sitekey: captchaSiteKey,
+                theme: 'light',
+                callback: (token) => { registerCaptchaToken = token; },
+                'expired-callback': () => { registerCaptchaToken = ''; },
+                'error-callback': () => { registerCaptchaToken = ''; }
+            });
+        }
+
+        function showAuthMessage(text, type = 'error') {
+            authMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'border-red-200', 'bg-green-100', 'text-green-700', 'border-green-200', 'bg-blue-100', 'text-blue-700', 'border-blue-200');
+            if (type === 'success') {
+                authMessage.classList.add('bg-green-100', 'text-green-700', 'border', 'border-green-200');
+            } else if (type === 'info') {
+                authMessage.classList.add('bg-blue-100', 'text-blue-700', 'border', 'border-blue-200');
+            } else {
+                authMessage.classList.add('bg-red-100', 'text-red-700', 'border', 'border-red-200');
+            }
+            authMessage.textContent = text;
+        }
+
+        function resetAuthMessage() {
+            authMessage.classList.add('hidden');
+            authMessage.textContent = '';
+        }
+
+        function activateTab(tab) {
+            const isLogin = tab === 'login';
+
+            tabLogin.className = isLogin
+                ? 'rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition'
+                : 'rounded-lg px-4 py-2.5 text-sm font-medium text-blue-700 transition';
+
+            tabRegister.className = !isLogin
+                ? 'rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition'
+                : 'rounded-lg px-4 py-2.5 text-sm font-medium text-blue-700 transition';
+
+            loginForm.classList.toggle('hidden', !isLogin);
+            registerForm.classList.toggle('hidden', isLogin);
+            hideResendConfirmation();
+            resetAuthMessage();
+            if (captchaEnabled) {
+                resetCaptcha('login');
+                resetCaptcha('register');
+            }
+        }
+
+        async function apiRequest(path, options = {}) {
+            const config = { ...options };
+            config.headers = { ...(options.headers || {}) };
+            if (!config.headers['Content-Type'] && options.body) {
+                config.headers['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch(`${API_BASE}${path}`, config);
+            let data = {};
+            try {
+                data = await response.json();
+            } catch {
+                data = {};
+            }
+
+            if (!response.ok) {
+                throw new Error(extractApiErrorMessage(data));
+            }
+
+            return data;
+        }
+
+        function saveSession(session, email) {
+            authToken = session.access_token;
+            localStorage.setItem(ACCESS_TOKEN_KEY, session.access_token);
+            localStorage.setItem(USER_EMAIL_KEY, email || '');
+        }
+
+        function clearSession() {
+            authToken = null;
+            localStorage.removeItem(ACCESS_TOKEN_KEY);
+            localStorage.removeItem(USER_EMAIL_KEY);
+        }
+
+        function resetQuizState() {
+            questions = [];
+            currentIndex = 0;
+            selectedAnswer = null;
+            answers = [];
+            isLoadingQuestions = false;
+            quizContainer.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+            loadingDiv.innerHTML = '<h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>';
+            quizContentDiv.classList.add('hidden');
+            resultsScreenDiv.classList.add('hidden');
+            hideExamMessage();
+        }
+
+        function showAuthScreen(scrollToAuth = false) {
+            resetQuizState();
+            welcomeSection.classList.remove('hidden');
+            quizScreen.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            if (scrollToAuth) {
+                authScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function showQuizScreen(email) {
+            userEmail.textContent = email || localStorage.getItem(USER_EMAIL_KEY) || '-';
+            hideResendConfirmation();
+            resetAuthMessage();
+            welcomeSection.classList.add('hidden');
+            authSection.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            examSelector.classList.remove('hidden');
+            renderMockExamCards();
+
+            if (!selectedMockExam || !AVAILABLE_EXAMS.has(selectedMockExam)) {
+                resetQuizState();
+                showExamMessage('Select a mock exam to start.', 'info');
+                quizScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            fetchQuestions();
+            quizScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        async function verifyExistingSession() {
+            if (!authToken) return false;
+            try {
+                const data = await apiRequest('/api/auth/me', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+                showQuizScreen(data.user?.email);
+                return true;
+            } catch {
+                clearSession();
+                return false;
+            }
+        }
+
+        async function fetchQuestions() {
+            if (!selectedMockExam) {
+                showExamMessage('Select a mock exam to load questions.', 'error');
+                return;
+            }
+            if (!AVAILABLE_EXAMS.has(selectedMockExam)) {
+                resetQuizState();
+                showExamMessage(`Mock Exam ${selectedMockExam} is coming soon.`, 'info');
+                return;
+            }
+            if (isLoadingQuestions) return;
+
+            isLoadingQuestions = true;
+            quizContainer.classList.remove('hidden');
+            loadingDiv.classList.remove('hidden');
+            quizContentDiv.classList.add('hidden');
+            resultsScreenDiv.classList.add('hidden');
+            hideExamMessage();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/questions?mock_exam=${selectedMockExam}`, {
+                    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(extractApiErrorMessage(data));
+                }
+
+                if (data && data.length > 0) {
+                    questions = data;
+                    currentIndex = 0;
+                    answers = [];
+                    startQuiz();
+                    showExamMessage(`Mock Exam ${selectedMockExam} loaded.`, 'success');
+                } else {
+                    loadingDiv.innerHTML = `<p class="text-rose-500">No questions found for Mock Exam ${selectedMockExam}.</p>`;
+                }
+            } catch (error) {
+                loadingDiv.innerHTML = `<p class="text-rose-500">${error.message || 'Server connection error.'}</p>`;
+            } finally {
+                isLoadingQuestions = false;
+            }
+        }
+
         function startQuiz() {
             loadingDiv.classList.add('hidden');
             quizContentDiv.classList.remove('hidden');
+            resultsScreenDiv.classList.add('hidden');
             renderQuestion();
         }
 
@@ -90,30 +758,21 @@
             selectedAnswer = null;
             nextBtn.disabled = true;
 
-            // Update Headers
-            subjectBadge.innerText = currentQ.subject || 'ОРТ Тест';
-            progressText.innerText = `Вопрос ${currentIndex + 1} из ${questions.length}`;
+            subjectBadge.innerText = currentQ.subject || 'ORT Test';
+            progressText.innerText = `Question ${currentIndex + 1} of ${questions.length}`;
             questionText.innerText = currentQ.question_text;
-
-            // Clear previous options
             optionsContainer.innerHTML = '';
 
-            // Render new options (A, B, C, D)
-            const options = currentQ.options;
+            const options = currentQ.options || {};
             for (const [key, value] of Object.entries(options)) {
-                if(!value) continue; // Skip if null
+                if (!value) continue;
 
                 const optionDiv = document.createElement('div');
-                optionDiv.className = "flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all";
-                
-                // Add click listener to select this option
+                optionDiv.className = 'flex cursor-pointer items-start gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-blue-300 hover:bg-blue-50/70';
                 optionDiv.onclick = () => selectOption(key, optionDiv);
-
                 optionDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700 mr-4 option-letter">
-                        ${key}
-                    </div>
-                    <span class="text-gray-800 font-medium">${value}</span>
+                    <div class="option-letter mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-700">${key}</div>
+                    <span class="pt-0.5 font-medium text-slate-800">${value}</span>
                 `;
                 optionsContainer.appendChild(optionDiv);
             }
@@ -123,49 +782,155 @@
             selectedAnswer = key;
             nextBtn.disabled = false;
 
-            // Reset all styles
             const allOptions = optionsContainer.children;
-            for(let opt of allOptions) {
-                opt.classList.remove('border-blue-500', 'bg-blue-50');
-                opt.classList.add('border-gray-200');
+            for (const opt of allOptions) {
+                opt.classList.remove('border-blue-500', 'bg-blue-50/70', 'shadow-sm');
+                opt.classList.add('border-slate-200');
                 opt.querySelector('.option-letter').classList.remove('bg-blue-500', 'text-white');
-                opt.querySelector('.option-letter').classList.add('bg-gray-200', 'text-gray-700');
+                opt.querySelector('.option-letter').classList.add('bg-slate-200', 'text-slate-700');
             }
 
-            // Highlight selected
-            element.classList.remove('border-gray-200');
-            element.classList.add('border-blue-500', 'bg-blue-50');
-            element.querySelector('.option-letter').classList.remove('bg-gray-200', 'text-gray-700');
+            element.classList.remove('border-slate-200');
+            element.classList.add('border-blue-500', 'bg-blue-50/70', 'shadow-sm');
+            element.querySelector('.option-letter').classList.remove('bg-slate-200', 'text-slate-700');
             element.querySelector('.option-letter').classList.add('bg-blue-500', 'text-white');
         }
-
-        // --- Handle Next Button ---
-        nextBtn.onclick = () => {
-            // Save answer
-            answers.push({
-                question_id: questions[currentIndex].id,
-                selected: selectedAnswer
-            });
-
-            // Move to next or show results
-            if (currentIndex < questions.length - 1) {
-                currentIndex++;
-                renderQuestion();
-            } else {
-                showResults();
-            }
-        };
 
         function showResults() {
             quizContentDiv.classList.add('hidden');
             resultsScreenDiv.classList.remove('hidden');
-            
-            // In a real app, you would POST the 'answers' array back to FastAPI here to score it!
-            console.log("User Answers Array:", answers);
         }
 
-        // --- Initialize ---
-        fetchQuestions();
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            resetAuthMessage();
+            hideResendConfirmation();
+
+            const email = normalizeEmail(document.getElementById('login-email').value);
+            const password = document.getElementById('login-password').value;
+
+            if (!isValidEmail(email)) return showAuthMessage('Enter a valid email address.');
+            if (!password || !password.trim()) return showAuthMessage('Password is required.');
+            if (captchaEnabled && !loginCaptchaToken) return showAuthMessage('Complete captcha verification before logging in.');
+
+            setButtonLoading(loginSubmitBtn, true, 'Logging In...');
+            try {
+                const data = await apiRequest('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password, captcha_token: loginCaptchaToken || null })
+                });
+
+                saveSession(data.session, data.user?.email || email);
+                showQuizScreen(data.user?.email || email);
+            } catch (error) {
+                showAuthMessage(error.message || 'Login failed.');
+                if ((error.message || '').toLowerCase().includes('not confirmed')) {
+                    showResendConfirmation(email);
+                }
+            } finally {
+                setButtonLoading(loginSubmitBtn, false);
+                resetCaptcha('login');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            resetAuthMessage();
+            hideResendConfirmation();
+
+            const email = normalizeEmail(document.getElementById('register-email').value);
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+            if (!isValidEmail(email)) return showAuthMessage('Enter a valid email address.');
+            const passwordError = getPasswordValidationError(password);
+            if (passwordError) return showAuthMessage(passwordError);
+            if (password !== confirmPassword) return showAuthMessage('Passwords do not match.');
+            if (captchaEnabled && !registerCaptchaToken) return showAuthMessage('Complete captcha verification before registering.');
+
+            setButtonLoading(registerSubmitBtn, true, 'Creating Account...');
+            try {
+                const data = await apiRequest('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password, captcha_token: registerCaptchaToken || null })
+                });
+
+                if (data.session && data.session.access_token) {
+                    saveSession(data.session, data.user?.email || email);
+                    showAuthMessage('Account created and logged in.', 'success');
+                    showQuizScreen(data.user?.email || email);
+                    return;
+                }
+
+                activateTab('login');
+                document.getElementById('login-email').value = email;
+                showAuthMessage('Account created. Confirm your email, then log in.', 'info');
+                showResendConfirmation(email);
+            } catch (error) {
+                showAuthMessage(error.message || 'Registration failed.');
+            } finally {
+                setButtonLoading(registerSubmitBtn, false);
+                resetCaptcha('register');
+            }
+        });
+
+        resendBtn.addEventListener('click', async () => {
+            resetAuthMessage();
+            const loginEmail = normalizeEmail(document.getElementById('login-email').value);
+            const registerEmail = normalizeEmail(document.getElementById('register-email').value);
+            const email = pendingConfirmationEmail || loginEmail || registerEmail;
+
+            if (!isValidEmail(email)) return showAuthMessage('Enter a valid email before resending confirmation.');
+
+            setButtonLoading(resendBtn, true, 'Sending...');
+            try {
+                const data = await apiRequest('/api/auth/resend-confirmation', {
+                    method: 'POST',
+                    body: JSON.stringify({ email })
+                });
+                showAuthMessage(data.message || 'Confirmation email sent.', 'info');
+            } catch (error) {
+                showAuthMessage(error.message || 'Could not resend confirmation.');
+            } finally {
+                setButtonLoading(resendBtn, false);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            answers.push({ question_id: questions[currentIndex].id, selected: selectedAnswer });
+            if (currentIndex < questions.length - 1) {
+                currentIndex += 1;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        restartBtn.addEventListener('click', () => {
+            resetQuizState();
+            fetchQuestions();
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            clearSession();
+            selectedMockExam = null;
+            localStorage.removeItem(SELECTED_EXAM_KEY);
+            activateTab('login');
+            showAuthScreen(true);
+            resetCaptcha('login');
+            resetCaptcha('register');
+        });
+
+        tabLogin.addEventListener('click', () => activateTab('login'));
+        tabRegister.addEventListener('click', () => activateTab('register'));
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadAuthConfig();
+            await renderCaptchaWidgets();
+            activateTab('login');
+            const sessionValid = await verifyExistingSession();
+            if (!sessionValid) showAuthScreen(false);
+        });
     </script>
 </body>
 </html>
