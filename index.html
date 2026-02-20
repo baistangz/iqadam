@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORT Prep - MVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-3xl w-full bg-white rounded-2xl shadow-lg p-8" id="quiz-container">
+        
+        <div id="loading" class="text-center py-10">
+            <h2 class="text-2xl font-semibold text-gray-600 animate-pulse">Загрузка вопросов...</h2>
+        </div>
+
+        <div id="quiz-content" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span id="subject-badge" class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Предмет</span>
+                <span id="progress-text" class="text-sm font-medium text-gray-500">Вопрос 1 из 30</span>
+            </div>
+
+            <h2 id="question-text" class="text-xl font-bold text-gray-800 mb-8 leading-relaxed">Текст вопроса будет здесь?</h2>
+
+            <div id="options-container" class="space-y-4 mb-8">
+                </div>
+
+            <div class="flex justify-end">
+                <button id="next-btn" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Далее
+                </button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="hidden text-center py-10">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Тест завершен!</h2>
+            <p class="text-lg text-gray-600 mb-8">Вы ответили на все вопросы.</p>
+            <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">
+                Пройти заново
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- State Variables ---
+        let questions = [];
+        let currentIndex = 0;
+        let selectedAnswer = null;
+        let answers = []; // Stores user's choices
+
+        // --- DOM Elements ---
+        const loadingDiv = document.getElementById('loading');
+        const quizContentDiv = document.getElementById('quiz-content');
+        const resultsScreenDiv = document.getElementById('results-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const progressText = document.getElementById('progress-text');
+        const subjectBadge = document.getElementById('subject-badge');
+        const nextBtn = document.getElementById('next-btn');
+
+        // --- Fetch Data from FastAPI ---
+        async function fetchQuestions() {
+            try {
+                // Connect to your local FastAPI backend
+                const response = await fetch('http://127.0.0.1:8000/api/questions');
+                const data = await response.json();
+                
+                if(data && data.length > 0) {
+                    questions = data;
+                    startQuiz();
+                } else {
+                    loadingDiv.innerHTML = '<p class="text-red-500">Нет доступных вопросов. Загрузите базу данных.</p>';
+                }
+            } catch (error) {
+                console.error("Error fetching questions:", error);
+                loadingDiv.innerHTML = '<p class="text-red-500">Ошибка подключения к серверу.</p>';
+            }
+        }
+
+        // --- Render UI ---
+        function startQuiz() {
+            loadingDiv.classList.add('hidden');
+            quizContentDiv.classList.remove('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const currentQ = questions[currentIndex];
+            selectedAnswer = null;
+            nextBtn.disabled = true;
+
+            // Update Headers
+            subjectBadge.innerText = currentQ.subject || 'ОРТ Тест';
+            progressText.innerText = `Вопрос ${currentIndex + 1} из ${questions.length}`;
+            questionText.innerText = currentQ.question_text;
+
+            // Clear previous options
+            optionsContainer.innerHTML = '';
+
+            // Render new options (A, B, C, D)
+            const options = currentQ.options;
+            for (const [key, value] of Object.entries(options)) {
+                if(!value) continue; // Skip if null
+
+                const optionDiv = document.createElement('div');
+                optionDiv.className = "flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all";
+                
+                // Add click listener to select this option
+                optionDiv.onclick = () => selectOption(key, optionDiv);
+
+                optionDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700 mr-4 option-letter">
+                        ${key}
+                    </div>
+                    <span class="text-gray-800 font-medium">${value}</span>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            }
+        }
+
+        function selectOption(key, element) {
+            selectedAnswer = key;
+            nextBtn.disabled = false;
+
+            // Reset all styles
+            const allOptions = optionsContainer.children;
+            for(let opt of allOptions) {
+                opt.classList.remove('border-blue-500', 'bg-blue-50');
+                opt.classList.add('border-gray-200');
+                opt.querySelector('.option-letter').classList.remove('bg-blue-500', 'text-white');
+                opt.querySelector('.option-letter').classList.add('bg-gray-200', 'text-gray-700');
+            }
+
+            // Highlight selected
+            element.classList.remove('border-gray-200');
+            element.classList.add('border-blue-500', 'bg-blue-50');
+            element.querySelector('.option-letter').classList.remove('bg-gray-200', 'text-gray-700');
+            element.querySelector('.option-letter').classList.add('bg-blue-500', 'text-white');
+        }
+
+        // --- Handle Next Button ---
+        nextBtn.onclick = () => {
+            // Save answer
+            answers.push({
+                question_id: questions[currentIndex].id,
+                selected: selectedAnswer
+            });
+
+            // Move to next or show results
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        };
+
+        function showResults() {
+            quizContentDiv.classList.add('hidden');
+            resultsScreenDiv.classList.remove('hidden');
+            
+            // In a real app, you would POST the 'answers' array back to FastAPI here to score it!
+            console.log("User Answers Array:", answers);
+        }
+
+        // --- Initialize ---
+        fetchQuestions();
+    </script>
+</body>
+</html>
