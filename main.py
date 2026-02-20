@@ -25,14 +25,17 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI(title="ORT Prep Backend")
+# main.py
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://iqadam.vercel.app",  # <--- YOUR VERCEL URL
+        "http://localhost:5500",           # For local testing
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 def normalize_email(value: str) -> str:
     return value.strip().lower()
