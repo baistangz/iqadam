@@ -110,12 +110,28 @@
                 <h3 class="font-display text-2xl font-extrabold text-slate-900">Choose Your Mock Exam</h3>
             </div>
             <div id="exam-grid" class="space-y-2.5"></div>
-            <div id="exam-mode-panel" class="exam-mode-panel mt-4 hidden rounded-2xl border p-4 md:p-5">
-                <p class="exam-mode-kicker">Ready To Start</p>
-                <p class="exam-mode-title">Mock Exam <span id="selected-exam-text">19</span></p>
-                <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                    <button id="mode-no-timer-btn" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-100">No Timer</button>
-                    <button id="mode-timer-btn" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-100">With Timer (60 min)</button>
+            <div id="exam-mode-panel" class="exam-mode-panel mt-4 hidden rounded-2xl border p-3 md:p-4">
+                <div class="grid gap-2 sm:grid-cols-2">
+                    <button id="mode-no-timer-btn" type="button" class="mode-btn">
+                        <span class="mode-btn-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 6l12 12"></path>
+                                <circle cx="12" cy="13" r="7"></circle>
+                            </svg>
+                        </span>
+                        <span class="mode-btn-label">No Timer</span>
+                    </button>
+                    <button id="mode-timer-btn" type="button" class="mode-btn">
+                        <span class="mode-btn-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="13" r="7"></circle>
+                                <path d="M12 13V9"></path>
+                                <path d="M12 13l3 2"></path>
+                                <path d="M9 3h6"></path>
+                            </svg>
+                        </span>
+                        <span class="mode-btn-label">Timer</span>
+                    </button>
                 </div>
             </div>
             <p id="exam-message" class="mt-4 hidden rounded-xl border px-4 py-3 text-sm"></p>
@@ -192,7 +208,6 @@
         const examSelector = document.getElementById('exam-selector');
         const examGrid = document.getElementById('exam-grid');
         const examModePanel = document.getElementById('exam-mode-panel');
-        const selectedExamText = document.getElementById('selected-exam-text');
         const modeNoTimerBtn = document.getElementById('mode-no-timer-btn');
         const modeTimerBtn = document.getElementById('mode-timer-btn');
         const examMessage = document.getElementById('exam-message');
@@ -467,16 +482,13 @@
         }
 
         function setModeButtonsState() {
-            const activeClass = 'border-blue-500 bg-blue-600 text-white';
-            const idleClass = 'border-slate-300 bg-white text-slate-700';
-
             modeNoTimerBtn.className = selectedExamMode === 'untimed'
-                ? `rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${activeClass}`
-                : `rounded-xl border px-4 py-2.5 text-sm font-semibold transition hover:border-blue-400 hover:bg-blue-100 ${idleClass}`;
+                ? 'mode-btn mode-btn-active'
+                : 'mode-btn';
 
             modeTimerBtn.className = selectedExamMode === 'timed'
-                ? `rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${activeClass}`
-                : `rounded-xl border px-4 py-2.5 text-sm font-semibold transition hover:border-blue-400 hover:bg-blue-100 ${idleClass}`;
+                ? 'mode-btn mode-btn-active'
+                : 'mode-btn';
         }
 
         function hideExamModePanel() {
@@ -488,7 +500,6 @@
                 hideExamModePanel();
                 return;
             }
-            selectedExamText.textContent = String(examNo);
             showElementInstant(examModePanel);
             setModeButtonsState();
         }
