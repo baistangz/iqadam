@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iQadam</title>
+    <title>IQadam</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
         <div class="kyrgyz-sun"></div>
         <div class="relative z-10 mx-auto flex min-h-[78vh] max-w-6xl items-center">
             <div class="max-w-2xl rounded-3xl border border-blue-100 bg-white/70 p-7 shadow-[0_32px_90px_-48px_rgba(37,99,235,0.55)] backdrop-blur-sm md:p-10">
-                <p class="brand-mark">iQadam</p>
+                <p class="brand-mark">IQadam</p>
                 <h1 class="font-display mt-4 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-5xl">
                     Prepare for ORT with full-length mock exams
                 </h1>
@@ -46,7 +46,7 @@
 
     <section id="auth-section" class="auth-lake fade-transition relative min-h-[58svh] overflow-hidden px-4 pb-6 pt-6 md:min-h-[54svh] md:px-8 md:pb-8 md:pt-8">
         <div id="auth-screen" class="relative z-10 mx-auto mt-10 max-w-md rounded-2xl border border-blue-100 bg-white/96 p-6 shadow-lg backdrop-blur-sm md:mt-12 md:p-8">
-            <h2 class="font-display mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Sign in or Create Account</h2>
+            <h2 id="auth-title" class="font-display mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Sign In</h2>
 
             <div class="mt-6 mb-6 grid grid-cols-2 rounded-xl bg-blue-50 p-1">
                 <button id="tab-login" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition">Login</button>
@@ -168,6 +168,7 @@
         let reviewQuestions = [];
         let selectedExamMode = null;
         let timerIntervalId = null;
+        let resizeRerenderTimerId = null;
         let timerRemainingSeconds = EXAM_TIMER_SECONDS;
         let timerActive = false;
         let completingExam = false;
@@ -195,6 +196,7 @@
         const modeTimerBtn = document.getElementById('mode-timer-btn');
         const examMessage = document.getElementById('exam-message');
         const authMessage = document.getElementById('auth-message');
+        const authTitle = document.getElementById('auth-title');
         const resendWrap = document.getElementById('resend-confirmation-wrap');
         const resendBtn = document.getElementById('resend-confirmation-btn');
         const tabLogin = document.getElementById('tab-login');
@@ -218,6 +220,7 @@
         const optionsContainer = document.getElementById('options-container');
         const nextBtn = document.getElementById('next-btn');
         const restartBtn = document.getElementById('restart-btn');
+        const questionOrderMap = new Map();
         const ROOT_SCREEN_IDS = ['welcome-section', 'auth-section', 'quiz-screen'];
         const FADE_DURATION_MS = 300;
         const fadeState = new WeakMap();
@@ -610,6 +613,10 @@
 
         function applyQuestionsToQuiz(data) {
             questions = Array.isArray(data) ? data : [];
+            questionOrderMap.clear();
+            for (let i = 0; i < questions.length; i += 1) {
+                questionOrderMap.set(String(questions[i].id), i + 1);
+            }
             currentPageIndex = 0;
             questionsPerPage = getQuestionsPerPage();
             answers = [];
@@ -620,6 +627,7 @@
 
         function renderMockExamCards() {
             examGrid.innerHTML = '';
+            const cardsFragment = document.createDocumentFragment();
             for (const examNo of MOCK_EXAMS) {
                 const isAvailable = AVAILABLE_EXAMS.has(examNo);
                 const isSelected = selectedMockExam === examNo;
@@ -640,13 +648,16 @@
                     </div>
                 `;
 
-                card.addEventListener('click', async () => selectMockExam(examNo));
+                card.addEventListener('click', () => {
+                    void selectMockExam(examNo);
+                });
                 if (!isAvailable) {
                     card.classList.add('cursor-not-allowed', 'opacity-65');
                 }
 
-                examGrid.appendChild(card);
+                cardsFragment.appendChild(card);
             }
+            examGrid.appendChild(cardsFragment);
         }
 
         async function selectMockExam(examNo) {
@@ -765,6 +776,7 @@
 
         function activateTab(tab) {
             const isLogin = tab === 'login';
+            authTitle.textContent = isLogin ? 'Sign In' : 'Create Account';
 
             tabLogin.className = isLogin
                 ? 'rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition'
@@ -839,6 +851,7 @@
 
         function resetQuizState() {
             questions = [];
+            questionOrderMap.clear();
             currentPageIndex = 0;
             questionsPerPage = getQuestionsPerPage();
             answers = [];
@@ -1013,11 +1026,11 @@
             const { startIndex, items } = getPageSlice(currentPageIndex);
             questionText.innerText = 'Практическая грамматика русского языка';
             optionsContainer.innerHTML = '';
+            const questionCardsFragment = document.createDocumentFragment();
 
             items.forEach((question, offset) => {
                 const questionId = String(question.id);
-                const sourceIndex = questions.findIndex((item) => String(item.id) === questionId);
-                const questionNo = sourceIndex >= 0 ? sourceIndex + 1 : startIndex + offset + 1;
+                const questionNo = questionOrderMap.get(questionId) || (startIndex + offset + 1);
                 const questionCard = document.createElement('article');
                 questionCard.className = 'book-question-card rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.45)]';
                 questionCard.dataset.questionId = questionId;
@@ -1075,9 +1088,10 @@
                     questionCard.appendChild(reviewInfo);
                 }
 
-                optionsContainer.appendChild(questionCard);
+                questionCardsFragment.appendChild(questionCard);
             });
 
+            optionsContainer.appendChild(questionCardsFragment);
             refreshNextButtonState();
         }
 
@@ -1287,12 +1301,18 @@
 
         window.addEventListener('resize', () => {
             if (!questions.length || quizContentDiv.classList.contains('hidden')) return;
-            const nextPerPage = getQuestionsPerPage();
-            if (nextPerPage === questionsPerPage) return;
-            const firstVisibleQuestion = currentPageIndex * questionsPerPage;
-            questionsPerPage = nextPerPage;
-            currentPageIndex = Math.floor(firstVisibleQuestion / questionsPerPage);
-            renderQuestionPage();
+            if (resizeRerenderTimerId !== null) {
+                clearTimeout(resizeRerenderTimerId);
+            }
+            resizeRerenderTimerId = window.setTimeout(() => {
+                resizeRerenderTimerId = null;
+                const nextPerPage = getQuestionsPerPage();
+                if (nextPerPage === questionsPerPage) return;
+                const firstVisibleQuestion = currentPageIndex * questionsPerPage;
+                questionsPerPage = nextPerPage;
+                currentPageIndex = Math.floor(firstVisibleQuestion / questionsPerPage);
+                renderQuestionPage();
+            }, 120);
         });
 
         window.addEventListener('DOMContentLoaded', async () => {

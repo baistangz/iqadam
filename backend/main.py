@@ -28,6 +28,8 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 _questions_cache: dict[str, tuple[float, list[dict]]] = {}
 _questions_cache_lock = Lock()
+_questions_select_lock = Lock()
+_questions_has_correct_answer_column: bool | None = None
 
 app = FastAPI(title="ORT Prep Backend")
 # main.py
@@ -222,6 +224,26 @@ def _clear_questions_cache() -> None:
         _questions_cache.clear()
 
 
+def _get_questions_select_clause() -> str:
+    global _questions_has_correct_answer_column
+    with _questions_select_lock:
+        if _questions_has_correct_answer_column is False:
+            return "id,subject,question_text,options"
+        return "id,subject,question_text,options,correct_answer"
+
+
+def _mark_questions_select_without_correct_answer() -> None:
+    global _questions_has_correct_answer_column
+    with _questions_select_lock:
+        _questions_has_correct_answer_column = False
+
+
+def _mark_questions_select_with_correct_answer() -> None:
+    global _questions_has_correct_answer_column
+    with _questions_select_lock:
+        _questions_has_correct_answer_column = True
+
+
 @app.post("/api/auth/register")
 async def register_user(credentials: RegisterCredentials):
     try:
@@ -385,14 +407,18 @@ async def get_questions(
     if cached_questions is not None:
         return cached_questions
 
+    select_clause = _get_questions_select_clause()
     try:
         response = (
             supabase.table("questions")
-            .select("id,subject,question_text,options,correct_answer")
+            .select(select_clause)
             .execute()
         )
         questions = response.data or []
+        if "correct_answer" in select_clause:
+            _mark_questions_select_with_correct_answer()
     except Exception:
+        _mark_questions_select_without_correct_answer()
         response = (
             supabase.table("questions")
             .select("id,subject,question_text,options")
