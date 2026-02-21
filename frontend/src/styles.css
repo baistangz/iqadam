@@ -209,14 +209,14 @@
 
         .kalpak-avatar {
             position: relative;
-            width: clamp(2.1rem, 2vw, 2.35rem);
-            height: clamp(2.1rem, 2vw, 2.35rem);
-            min-width: 2.1rem;
-            min-height: 2.1rem;
+            width: clamp(2.15rem, 2vw, 2.45rem);
+            height: clamp(2.15rem, 2vw, 2.45rem);
+            min-width: 2.15rem;
+            min-height: 2.15rem;
             flex-shrink: 0;
             border-radius: 9999px;
-            background: linear-gradient(180deg, #f8fafc 0%, #dbeafe 100%);
-            border: 1.4px solid rgba(51, 65, 85, 0.65);
+            background: linear-gradient(180deg, #f8fbff 0%, #dbeafe 100%);
+            border: 1.5px solid rgba(51, 65, 85, 0.68);
             display: inline-flex;
             align-items: flex-end;
             justify-content: center;
@@ -229,48 +229,68 @@
         .kalpak-avatar::before {
             content: "";
             position: absolute;
-            bottom: -0.18rem;
-            width: 1.5rem;
-            height: 0.62rem;
+            bottom: -0.2rem;
+            width: 1.58rem;
+            height: 0.66rem;
             border-radius: 9999px 9999px 0 0;
-            background: #94a3b8;
-            opacity: 0.42;
+            background: #64748b;
+            opacity: 0.3;
         }
 
-        .kalpak-head {
+        .kalpak-face {
             position: relative;
             z-index: 1;
-            width: 1.08rem;
-            height: 1.08rem;
+            width: 1.02rem;
+            height: 1rem;
             border-radius: 9999px;
-            background: linear-gradient(180deg, #f4d0b5 0%, #eab79a 100%);
-            margin-bottom: 0.14rem;
+            background: linear-gradient(180deg, #f6d3b9 0%, #eab99d 100%);
+            margin-bottom: 0.58rem;
+        }
+
+        .kalpak-neck {
+            position: absolute;
+            z-index: 1;
+            bottom: 0.55rem;
+            width: 0.42rem;
+            height: 0.22rem;
+            border-radius: 0.2rem;
+            background: #e7b08f;
+        }
+
+        .kalpak-shirt {
+            position: absolute;
+            z-index: 0;
+            bottom: 0.05rem;
+            width: 1.36rem;
+            height: 0.74rem;
+            border-radius: 0.62rem 0.62rem 0.16rem 0.16rem;
+            background: linear-gradient(180deg, #1e3a8a 0%, #1d4ed8 100%);
         }
 
         .kalpak-hat {
             position: absolute;
             z-index: 2;
-            top: 0.08rem;
+            top: 0.06rem;
             left: 50%;
-            width: 1.52rem;
+            width: 1.36rem;
             height: 0.94rem;
             transform: translateX(-50%);
-            border-radius: 0.6rem 0.6rem 0.35rem 0.35rem;
+            border-radius: 0.48rem 0.48rem 0.36rem 0.36rem;
             background:
-                linear-gradient(180deg, #ffffff 0%, #e2e8f0 90%);
-            border: 1px solid rgba(51, 65, 85, 0.54);
-            box-shadow: inset 0 -2px 0 rgba(51, 65, 85, 0.16);
+                linear-gradient(180deg, #ffffff 0%, #e2e8f0 88%);
+            border: 1px solid rgba(51, 65, 85, 0.56);
+            box-shadow: inset 0 -2px 0 rgba(51, 65, 85, 0.22);
         }
 
         .kalpak-hat::after {
             content: "";
             position: absolute;
-            top: 0.1rem;
-            bottom: 0.1rem;
+            top: 0.12rem;
+            bottom: 0.14rem;
             left: 50%;
             width: 2px;
             transform: translateX(-50%);
-            background: rgba(51, 65, 85, 0.3);
+            background: rgba(51, 65, 85, 0.38);
             border-radius: 9999px;
         }
 
