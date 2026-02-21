@@ -1,11 +1,14 @@
 import os
 import re
+import hashlib
+import json
 from threading import Lock
 from time import time
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, field_validator
 from supabase import Client, create_client
 from supabase_auth.errors import AuthApiError
@@ -26,7 +29,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Missing Supabase credentials in environment variables.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-_questions_cache: dict[str, tuple[float, list[dict]]] = {}
+_questions_cache: dict[str, tuple[float, list[dict], str]] = {}
 _questions_cache_lock = Lock()
 _questions_select_lock = Lock()
 _questions_has_correct_answer_column: bool | None = None
@@ -43,6 +46,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 def normalize_email(value: str) -> str:
     return value.strip().lower()
@@ -202,21 +206,30 @@ def _questions_cache_key(mock_exam: int | None) -> str:
     return f"mock_exam:{mock_exam}" if mock_exam is not None else "mock_exam:all"
 
 
-def _get_cached_questions(cache_key: str) -> list[dict] | None:
+def _questions_etag(data: list[dict]) -> str:
+    digest = hashlib.sha256(
+        json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return f'W/"{digest}"'
+
+
+def _get_cached_questions(cache_key: str) -> tuple[list[dict], str] | None:
     with _questions_cache_lock:
         cached_entry = _questions_cache.get(cache_key)
         if not cached_entry:
             return None
-        cached_at, cached_data = cached_entry
+        cached_at, cached_data, cached_etag = cached_entry
         if time() - cached_at >= QUESTIONS_CACHE_TTL_SECONDS:
             _questions_cache.pop(cache_key, None)
             return None
-        return cached_data
+        return cached_data, cached_etag
 
 
-def _set_cached_questions(cache_key: str, data: list[dict]) -> None:
+def _set_cached_questions(cache_key: str, data: list[dict]) -> str:
+    etag = _questions_etag(data)
     with _questions_cache_lock:
-        _questions_cache[cache_key] = (time(), data)
+        _questions_cache[cache_key] = (time(), data, etag)
+    return etag
 
 
 def _clear_questions_cache() -> None:
@@ -397,7 +410,9 @@ async def upload_questions(questions: list[QuestionInsert]):
 
 @app.get("/api/questions")
 async def get_questions(
-    mock_exam: int | None = Query(default=None, ge=16, le=22)
+    http_response: Response,
+    mock_exam: int | None = Query(default=None, ge=16, le=22),
+    if_none_match: str | None = Header(default=None, alias="If-None-Match"),
 ):
     if mock_exam is not None and mock_exam != 19:
         return []
@@ -405,25 +420,40 @@ async def get_questions(
     cache_key = _questions_cache_key(mock_exam)
     cached_questions = _get_cached_questions(cache_key)
     if cached_questions is not None:
-        return cached_questions
+        questions, etag = cached_questions
+        http_response.headers["Cache-Control"] = f"public, max-age={QUESTIONS_CACHE_TTL_SECONDS}"
+        http_response.headers["ETag"] = etag
+        if if_none_match and if_none_match == etag:
+            return Response(status_code=304, headers={
+                "Cache-Control": f"public, max-age={QUESTIONS_CACHE_TTL_SECONDS}",
+                "ETag": etag,
+            })
+        return questions
 
     select_clause = _get_questions_select_clause()
     try:
-        response = (
+        db_response = (
             supabase.table("questions")
             .select(select_clause)
             .execute()
         )
-        questions = response.data or []
+        questions = db_response.data or []
         if "correct_answer" in select_clause:
             _mark_questions_select_with_correct_answer()
     except Exception:
         _mark_questions_select_without_correct_answer()
-        response = (
+        db_response = (
             supabase.table("questions")
             .select("id,subject,question_text,options")
             .execute()
         )
-        questions = response.data or []
-    _set_cached_questions(cache_key, questions)
+        questions = db_response.data or []
+    etag = _set_cached_questions(cache_key, questions)
+    http_response.headers["Cache-Control"] = f"public, max-age={QUESTIONS_CACHE_TTL_SECONDS}"
+    http_response.headers["ETag"] = etag
+    if if_none_match and if_none_match == etag:
+        return Response(status_code=304, headers={
+            "Cache-Control": f"public, max-age={QUESTIONS_CACHE_TTL_SECONDS}",
+            "ETag": etag,
+        })
     return questions

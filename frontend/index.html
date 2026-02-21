@@ -94,13 +94,13 @@
     </section>
 
     <section id="quiz-screen" class="fade-transition hidden mx-auto max-w-6xl px-4 pb-16 md:px-8">
-        <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm">
-            <div class="flex items-center gap-3">
-                <div class="kalpak-avatar" aria-hidden="true">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm sm:flex-nowrap">
+            <div class="flex min-w-0 items-center gap-3">
+                <div class="kalpak-avatar" aria-hidden="true" role="presentation">
                     <span class="kalpak-hat"></span>
                     <span class="kalpak-head"></span>
                 </div>
-                <p id="user-email" class="text-sm font-semibold text-slate-800">-</p>
+                <p id="user-email" class="max-w-[16rem] truncate text-sm font-semibold text-slate-800 md:max-w-[24rem]">-</p>
             </div>
             <button id="logout-btn" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">Log Out</button>
         </div>
@@ -188,7 +188,9 @@
         let resizeRerenderTimerId = null;
         let timerRemainingSeconds = EXAM_TIMER_SECONDS;
         let timerActive = false;
+        let timerDeadlineTs = null;
         let completingExam = false;
+        let startingExam = false;
         let authToken = localStorage.getItem(ACCESS_TOKEN_KEY);
         let selectedMockExam = Number(localStorage.getItem(SELECTED_EXAM_KEY)) || null;
         let pendingConfirmationEmail = '';
@@ -455,6 +457,7 @@
                 timerIntervalId = null;
             }
             timerActive = false;
+            timerDeadlineTs = null;
             timerRemainingSeconds = EXAM_TIMER_SECONDS;
             updateTimerBadge();
             hideElementInstant(timerBadge);
@@ -469,12 +472,14 @@
         function startExamTimer() {
             stopExamTimer();
             timerActive = true;
+            timerDeadlineTs = Date.now() + (EXAM_TIMER_SECONDS * 1000);
             timerRemainingSeconds = EXAM_TIMER_SECONDS;
             updateTimerBadge();
             showElementInstant(timerBadge);
             timerIntervalId = window.setInterval(() => {
                 if (!timerActive) return;
-                timerRemainingSeconds -= 1;
+                const diffMs = Math.max(0, (timerDeadlineTs || Date.now()) - Date.now());
+                timerRemainingSeconds = Math.ceil(diffMs / 1000);
                 if (timerRemainingSeconds <= 0) {
                     timerRemainingSeconds = 0;
                     updateTimerBadge();
@@ -483,7 +488,7 @@
                     return;
                 }
                 updateTimerBadge();
-            }, 1000);
+            }, 500);
         }
 
         function setModeButtonsState() {
@@ -494,6 +499,15 @@
             modeTimerBtn.className = selectedExamMode === 'timed'
                 ? 'mode-btn mode-btn-active'
                 : 'mode-btn';
+        }
+
+        function setModeButtonsLoading(isLoading) {
+            [modeNoTimerBtn, modeTimerBtn].forEach((button) => {
+                if (!button) return;
+                button.disabled = isLoading;
+                button.classList.toggle('cursor-wait', isLoading);
+                button.classList.toggle('opacity-70', isLoading);
+            });
         }
 
         function hideExamModePanel() {
@@ -650,6 +664,8 @@
                 const isSelected = selectedMockExam === examNo;
                 const card = document.createElement('button');
                 card.type = 'button';
+                card.dataset.examNo = String(examNo);
+                card.setAttribute('aria-label', `Mock Exam ${examNo}`);
                 card.className = isSelected
                     ? 'w-full rounded-xl border border-blue-500 bg-blue-50 px-4 py-3 text-left shadow-sm transition'
                     : 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-blue-300 hover:bg-blue-50/60';
@@ -664,10 +680,6 @@
                         ${statusBadge}
                     </div>
                 `;
-
-                card.addEventListener('click', () => {
-                    void selectMockExam(examNo);
-                });
                 if (!isAvailable) {
                     card.classList.add('cursor-not-allowed', 'opacity-65');
                 }
@@ -696,6 +708,7 @@
         }
 
         async function startSelectedExam(mode) {
+            if (startingExam) return;
             if (!selectedMockExam) {
                 showExamMessage('Select a mock exam first.', 'error');
                 return;
@@ -714,6 +727,8 @@
                 'info'
             );
 
+            startingExam = true;
+            setModeButtonsLoading(true);
             try {
                 await fetchQuestions(selectedMockExam, {
                     startQuizOnLoad: true,
@@ -721,6 +736,9 @@
                 });
             } catch {
                 // Error UI is handled inside fetchQuestions.
+            } finally {
+                startingExam = false;
+                setModeButtonsLoading(false);
             }
         }
 
@@ -1077,7 +1095,6 @@
                         setReviewOptionVisualState(button, selectedOption, correctOption);
                     } else {
                         setOptionVisualState(button, optionKey === selectedOption);
-                        button.addEventListener('click', () => selectOption(questionId, optionKey, button));
                     }
                 });
 
@@ -1304,6 +1321,9 @@
             selectedMockExam = null;
             localStorage.removeItem(SELECTED_EXAM_KEY);
             resetAuthForms();
+            loginPasswordInput.value = '';
+            registerPasswordInput.value = '';
+            registerConfirmPasswordInput.value = '';
             activateTab('login');
             await showAuthScreen(true);
             resetCaptcha('login');
@@ -1312,6 +1332,33 @@
 
         tabLogin.addEventListener('click', () => activateTab('login'));
         tabRegister.addEventListener('click', () => activateTab('register'));
+
+        examGrid.addEventListener('click', (event) => {
+            const card = event.target.closest('[data-exam-no]');
+            if (!card) return;
+            const examNo = Number(card.dataset.examNo);
+            if (!Number.isInteger(examNo)) return;
+            void selectMockExam(examNo);
+        });
+
+        optionsContainer.addEventListener('click', (event) => {
+            if (reviewMode) return;
+            const optionButton = event.target.closest('[data-option-key]');
+            if (!optionButton || !optionsContainer.contains(optionButton)) return;
+            const questionCard = optionButton.closest('[data-question-id]');
+            if (!questionCard) return;
+            const questionId = questionCard.dataset.questionId;
+            const optionKey = optionButton.dataset.optionKey;
+            if (!questionId || !optionKey) return;
+            selectOption(questionId, optionKey, optionButton);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!timerActive || !timerDeadlineTs || document.hidden) return;
+            const diffMs = Math.max(0, timerDeadlineTs - Date.now());
+            timerRemainingSeconds = Math.ceil(diffMs / 1000);
+            updateTimerBadge();
+        });
 
         window.addEventListener('resize', () => {
             if (!questions.length || quizContentDiv.classList.contains('hidden')) return;
