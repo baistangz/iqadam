@@ -1,6 +1,14 @@
-images
-__pycache__
 *.DS_Store
 .env
 *.pdf
-venv
+.vercel
+.python-version
+venv/
+__pycache__/
+*.pyc
+
+frontend/node_modules/
+frontend/dist/
+frontend/assets/styles.css
+
+backend/__pycache__/

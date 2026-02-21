@@ -1,0 +1,15 @@
+{
+  "name": "iqadam-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tailwindcss -c tailwind.config.js -i ./src/styles.css -o ./assets/styles.css --watch",
+    "build": "mkdir -p ./dist/assets && cp ./index.html ./dist/index.html && tailwindcss -c tailwind.config.js -i ./src/styles.css -o ./dist/assets/styles.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
