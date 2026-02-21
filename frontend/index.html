@@ -120,11 +120,6 @@
             </div>
 
             <div id="quiz-content" class="fade-transition hidden">
-                <div class="mb-6 flex items-center justify-between gap-4">
-                    <span id="subject-badge" class="rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-blue-800">Subject</span>
-                    <span id="progress-text" class="text-sm font-semibold text-slate-500">Page 1 of 1</span>
-                </div>
-
                 <h2 id="question-text" class="font-display mb-6 text-xl font-bold leading-relaxed text-slate-900 md:text-2xl">Question Book</h2>
 
                 <div id="options-container" class="book-page-shell mb-8"></div>
@@ -136,7 +131,7 @@
 
             <div id="results-screen" class="fade-transition hidden py-12 text-center">
                 <h2 class="font-display mb-4 text-3xl font-extrabold text-slate-900">Test completed</h2>
-                <p class="mb-8 text-lg text-slate-600">You answered all questions.</p>
+                <p id="results-summary" class="mb-8 text-lg text-slate-600">You answered all questions.</p>
                 <button id="restart-btn" class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Try Again</button>
             </div>
         </div>
@@ -196,10 +191,9 @@
         const loadingDiv = document.getElementById('loading');
         const quizContentDiv = document.getElementById('quiz-content');
         const resultsScreenDiv = document.getElementById('results-screen');
+        const resultsSummary = document.getElementById('results-summary');
         const questionText = document.getElementById('question-text');
         const optionsContainer = document.getElementById('options-container');
-        const progressText = document.getElementById('progress-text');
-        const subjectBadge = document.getElementById('subject-badge');
         const nextBtn = document.getElementById('next-btn');
         const restartBtn = document.getElementById('restart-btn');
         const ROOT_SCREEN_IDS = ['welcome-section', 'auth-section', 'quiz-screen'];
@@ -412,11 +406,6 @@
             return { startIndex, items };
         }
 
-        function isCurrentPageComplete() {
-            const { items } = getPageSlice();
-            return items.every((question) => answersByQuestionId.has(String(question.id)));
-        }
-
         function setOptionVisualState(button, isSelected) {
             if (!button) return;
             button.className = isSelected
@@ -438,7 +427,7 @@
                 return;
             }
             nextBtn.textContent = currentPageIndex < totalPages - 1 ? 'Next Page' : 'Finish Exam';
-            nextBtn.disabled = !isCurrentPageComplete();
+            nextBtn.disabled = false;
         }
 
         function applyQuestionsToQuiz(data) {
@@ -789,8 +778,6 @@
             questionsPerPage = getQuestionsPerPage();
             const totalPages = getTotalPages();
             if (!totalPages) {
-                subjectBadge.innerText = 'ORT Test';
-                progressText.innerText = 'Page 0 of 0';
                 questionText.innerText = 'No questions available.';
                 optionsContainer.innerHTML = '';
                 refreshNextButtonState();
@@ -802,14 +789,7 @@
             }
 
             const { startIndex, items } = getPageSlice(currentPageIndex);
-            const pageStart = startIndex + 1;
-            const pageEnd = startIndex + items.length;
-            const primarySubject = items[0]?.subject || 'ORT Test';
-            const hasMixedSubjects = items.some((question) => (question.subject || 'ORT Test') !== primarySubject);
-
-            subjectBadge.innerText = hasMixedSubjects ? 'ORT Mock' : primarySubject;
-            progressText.innerText = `Page ${currentPageIndex + 1} of ${totalPages} · Questions ${pageStart}-${pageEnd} of ${questions.length}`;
-            questionText.innerText = `Book Page ${currentPageIndex + 1}`;
+            questionText.innerText = 'Практическая грамматика русского языка';
             optionsContainer.innerHTML = '';
 
             items.forEach((question, offset) => {
@@ -830,9 +810,8 @@
                     .join('');
 
                 questionCard.innerHTML = `
-                    <div class="mb-4 flex items-center justify-between gap-3">
+                    <div class="mb-4">
                         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">Question ${questionNo}</span>
-                        <span class="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">${question.subject || 'ORT Test'}</span>
                     </div>
                     <h3 class="font-display mb-4 text-lg font-bold leading-relaxed text-slate-900">${question.question_text}</h3>
                     <div class="space-y-2.5">
@@ -864,6 +843,15 @@
         }
 
         async function showResults() {
+            const answeredCount = questions.reduce((total, question) => (
+                answersByQuestionId.has(String(question.id)) ? total + 1 : total
+            ), 0);
+            const skippedCount = Math.max(0, questions.length - answeredCount);
+            if (skippedCount > 0) {
+                resultsSummary.textContent = `You skipped ${skippedCount} question${skippedCount === 1 ? '' : 's'}.`;
+            } else {
+                resultsSummary.textContent = 'You answered all questions.';
+            }
             await showQuizSubview(resultsScreenDiv);
         }
 
