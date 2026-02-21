@@ -328,6 +328,7 @@
         const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const MOCK_EXAMS = [16, 17, 18, 19, 20, 21, 22];
         const AVAILABLE_EXAMS = new Set([19]);
+        const DEFAULT_AVAILABLE_EXAM = 19;
 
         let questions = [];
         let currentIndex = 0;
@@ -335,8 +336,9 @@
         let answers = [];
         let authToken = localStorage.getItem(ACCESS_TOKEN_KEY);
         let selectedMockExam = Number(localStorage.getItem(SELECTED_EXAM_KEY)) || null;
-        let isLoadingQuestions = false;
         let pendingConfirmationEmail = '';
+        const questionCache = new Map();
+        const questionFetches = new Map();
         let captchaEnabled = false;
         let captchaSiteKey = null;
         let loginCaptchaToken = '';
@@ -563,6 +565,18 @@
             examMessage.textContent = '';
         }
 
+        function getDefaultAvailableExam() {
+            if (AVAILABLE_EXAMS.has(DEFAULT_AVAILABLE_EXAM)) return DEFAULT_AVAILABLE_EXAM;
+            return MOCK_EXAMS.find((examNo) => AVAILABLE_EXAMS.has(examNo)) || null;
+        }
+
+        function applyQuestionsToQuiz(data) {
+            questions = data;
+            currentIndex = 0;
+            answers = [];
+            selectedAnswer = null;
+        }
+
         function renderMockExamCards() {
             examGrid.innerHTML = '';
             for (const examNo of MOCK_EXAMS) {
@@ -586,7 +600,7 @@
                 `;
 
                 if (isAvailable) {
-                    card.addEventListener('click', () => selectMockExam(examNo));
+                    card.addEventListener('click', async () => selectMockExam(examNo));
                 } else {
                     card.classList.add('cursor-not-allowed', 'opacity-65');
                 }
@@ -595,12 +609,19 @@
             }
         }
 
-        function selectMockExam(examNo) {
+        async function selectMockExam(examNo) {
             selectedMockExam = examNo;
             localStorage.setItem(SELECTED_EXAM_KEY, String(examNo));
             renderMockExamCards();
             showExamMessage(`Starting Mock Exam ${examNo}...`, 'info');
-            fetchQuestions();
+            try {
+                await fetchQuestions(examNo, {
+                    startQuizOnLoad: true,
+                    showLoader: !questionCache.has(examNo)
+                });
+            } catch {
+                // Error UI is handled inside fetchQuestions.
+            }
         }
 
         async function loadAuthConfig() {
@@ -735,7 +756,6 @@
             currentIndex = 0;
             selectedAnswer = null;
             answers = [];
-            isLoadingQuestions = false;
             hideElementInstant(quizContainer);
             showElementInstant(loadingDiv);
             loadingDiv.innerHTML = '<h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>';
@@ -764,16 +784,24 @@
                 fadeOutElement(authSection)
             ]);
             showElementInstant(examSelector);
-            renderMockExamCards();
-
-            if (!selectedMockExam || !AVAILABLE_EXAMS.has(selectedMockExam)) {
-                resetQuizState();
-                showExamMessage('Select a mock exam to start.', 'info');
-                quizScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                return;
+            const preloadExam = AVAILABLE_EXAMS.has(selectedMockExam)
+                ? selectedMockExam
+                : getDefaultAvailableExam();
+            if (preloadExam) {
+                selectedMockExam = preloadExam;
+                localStorage.setItem(SELECTED_EXAM_KEY, String(preloadExam));
+            } else {
+                selectedMockExam = null;
+                localStorage.removeItem(SELECTED_EXAM_KEY);
             }
-
-            fetchQuestions();
+            renderMockExamCards();
+            resetQuizState();
+            if (preloadExam) {
+                showExamMessage(`Mock Exam ${preloadExam} is ready. Click to start.`, 'info');
+                void fetchQuestions(preloadExam, { startQuizOnLoad: false, showLoader: false }).catch(() => {});
+            } else {
+                showExamMessage('No mock exams are available right now.', 'error');
+            }
             quizScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
@@ -791,46 +819,75 @@
             }
         }
 
-        async function fetchQuestions() {
-            if (!selectedMockExam) {
+        async function fetchQuestions(examNo = selectedMockExam, options = {}) {
+            const { startQuizOnLoad = false, showLoader = true } = options;
+            if (!examNo) {
                 showExamMessage('Select a mock exam to load questions.', 'error');
                 return;
             }
-            if (!AVAILABLE_EXAMS.has(selectedMockExam)) {
+            if (!AVAILABLE_EXAMS.has(examNo)) {
                 resetQuizState();
-                showExamMessage(`Mock Exam ${selectedMockExam} is coming soon.`, 'info');
+                showExamMessage(`Mock Exam ${examNo} is coming soon.`, 'info');
                 return;
             }
-            if (isLoadingQuestions) return;
 
-            isLoadingQuestions = true;
-            await fadeInElement(quizContainer);
-            await showQuizSubview(loadingDiv);
-            hideExamMessage();
+            if (questionCache.has(examNo)) {
+                const cachedQuestions = questionCache.get(examNo);
+                if (startQuizOnLoad) {
+                    applyQuestionsToQuiz(cachedQuestions);
+                    await fadeInElement(quizContainer);
+                    await startQuiz();
+                    showExamMessage(`Mock Exam ${examNo} loaded.`, 'success');
+                }
+                return cachedQuestions;
+            }
+
+            let requestPromise = questionFetches.get(examNo);
+            if (!requestPromise) {
+                requestPromise = (async () => {
+                    const response = await fetch(`${API_BASE}/api/questions?mock_exam=${examNo}`, {
+                        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(extractApiErrorMessage(data));
+                    }
+                    if (!Array.isArray(data) || data.length === 0) {
+                        throw new Error(`No questions found for Mock Exam ${examNo}.`);
+                    }
+
+                    questionCache.set(examNo, data);
+                    return data;
+                })();
+
+                questionFetches.set(examNo, requestPromise);
+                requestPromise.finally(() => {
+                    if (questionFetches.get(examNo) === requestPromise) {
+                        questionFetches.delete(examNo);
+                    }
+                });
+            }
+
+            if (startQuizOnLoad && showLoader) {
+                await fadeInElement(quizContainer);
+                await showQuizSubview(loadingDiv);
+                hideExamMessage();
+            }
 
             try {
-                const response = await fetch(`${API_BASE}/api/questions?mock_exam=${selectedMockExam}`, {
-                    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
-                });
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(extractApiErrorMessage(data));
-                }
-
-                if (data && data.length > 0) {
-                    questions = data;
-                    currentIndex = 0;
-                    answers = [];
+                const data = await requestPromise;
+                if (startQuizOnLoad) {
+                    applyQuestionsToQuiz(data);
                     await startQuiz();
-                    showExamMessage(`Mock Exam ${selectedMockExam} loaded.`, 'success');
-                } else {
-                    loadingDiv.innerHTML = `<p class="text-rose-500">No questions found for Mock Exam ${selectedMockExam}.</p>`;
+                    showExamMessage(`Mock Exam ${examNo} loaded.`, 'success');
                 }
+                return data;
             } catch (error) {
-                loadingDiv.innerHTML = `<p class="text-rose-500">${error.message || 'Server connection error.'}</p>`;
-            } finally {
-                isLoadingQuestions = false;
+                if (startQuizOnLoad) {
+                    loadingDiv.innerHTML = `<p class="text-rose-500">${error.message || 'Server connection error.'}</p>`;
+                }
+                throw error;
             }
         }
 
@@ -991,9 +1048,16 @@
             }
         });
 
-        restartBtn.addEventListener('click', () => {
-            resetQuizState();
-            fetchQuestions();
+        restartBtn.addEventListener('click', async () => {
+            if (!selectedMockExam) return;
+            try {
+                await fetchQuestions(selectedMockExam, {
+                    startQuizOnLoad: true,
+                    showLoader: !questionCache.has(selectedMockExam)
+                });
+            } catch {
+                // Error UI is handled inside fetchQuestions.
+            }
         });
 
         logoutBtn.addEventListener('click', async () => {
