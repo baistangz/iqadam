@@ -122,15 +122,15 @@
             <div id="quiz-content" class="fade-transition hidden">
                 <div class="mb-6 flex items-center justify-between gap-4">
                     <span id="subject-badge" class="rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-blue-800">Subject</span>
-                    <span id="progress-text" class="text-sm font-semibold text-slate-500">Question 1 of 30</span>
+                    <span id="progress-text" class="text-sm font-semibold text-slate-500">Page 1 of 1</span>
                 </div>
 
-                <h2 id="question-text" class="font-display mb-8 text-xl font-bold leading-relaxed text-slate-900 md:text-2xl">Question text</h2>
+                <h2 id="question-text" class="font-display mb-6 text-xl font-bold leading-relaxed text-slate-900 md:text-2xl">Question Book</h2>
 
-                <div id="options-container" class="mb-8 space-y-3.5"></div>
+                <div id="options-container" class="book-page-shell mb-8"></div>
 
                 <div class="flex justify-end">
-                    <button id="next-btn" disabled class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+                    <button id="next-btn" disabled class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Next Page</button>
                 </div>
             </div>
 
@@ -155,9 +155,10 @@
         const DEFAULT_AVAILABLE_EXAM = 19;
 
         let questions = [];
-        let currentIndex = 0;
-        let selectedAnswer = null;
+        let currentPageIndex = 0;
+        let questionsPerPage = 2;
         let answers = [];
+        const answersByQuestionId = new Map();
         let authToken = localStorage.getItem(ACCESS_TOKEN_KEY);
         let selectedMockExam = Number(localStorage.getItem(SELECTED_EXAM_KEY)) || null;
         let pendingConfirmationEmail = '';
@@ -394,11 +395,58 @@
             return MOCK_EXAMS.find((examNo) => AVAILABLE_EXAMS.has(examNo)) || null;
         }
 
+        function getQuestionsPerPage() {
+            if (window.innerWidth >= 1280) return 4;
+            if (window.innerWidth >= 768) return 3;
+            return 2;
+        }
+
+        function getTotalPages() {
+            if (!questions.length) return 0;
+            return Math.ceil(questions.length / questionsPerPage);
+        }
+
+        function getPageSlice(pageIndex = currentPageIndex) {
+            const startIndex = pageIndex * questionsPerPage;
+            const items = questions.slice(startIndex, startIndex + questionsPerPage);
+            return { startIndex, items };
+        }
+
+        function isCurrentPageComplete() {
+            const { items } = getPageSlice();
+            return items.every((question) => answersByQuestionId.has(String(question.id)));
+        }
+
+        function setOptionVisualState(button, isSelected) {
+            if (!button) return;
+            button.className = isSelected
+                ? 'quiz-option w-full rounded-xl border border-blue-500 bg-blue-50/80 px-4 py-3 text-left shadow-sm transition'
+                : 'quiz-option w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-blue-300 hover:bg-blue-50/70';
+            button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            const letter = button.querySelector('.option-letter');
+            if (!letter) return;
+            letter.className = isSelected
+                ? 'option-letter bg-blue-500 text-white'
+                : 'option-letter bg-slate-200 text-slate-700';
+        }
+
+        function refreshNextButtonState() {
+            const totalPages = getTotalPages();
+            if (!totalPages) {
+                nextBtn.disabled = true;
+                nextBtn.textContent = 'Next Page';
+                return;
+            }
+            nextBtn.textContent = currentPageIndex < totalPages - 1 ? 'Next Page' : 'Finish Exam';
+            nextBtn.disabled = !isCurrentPageComplete();
+        }
+
         function applyQuestionsToQuiz(data) {
-            questions = data;
-            currentIndex = 0;
+            questions = Array.isArray(data) ? data : [];
+            currentPageIndex = 0;
+            questionsPerPage = getQuestionsPerPage();
             answers = [];
-            selectedAnswer = null;
+            answersByQuestionId.clear();
         }
 
         function renderMockExamCards() {
@@ -591,15 +639,18 @@
 
         function resetQuizState() {
             questions = [];
-            currentIndex = 0;
-            selectedAnswer = null;
+            currentPageIndex = 0;
+            questionsPerPage = getQuestionsPerPage();
             answers = [];
+            answersByQuestionId.clear();
             hideElementInstant(quizContainer);
             showElementInstant(loadingDiv);
             loadingDiv.innerHTML = '<h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>';
             hideElementInstant(quizContentDiv);
             hideElementInstant(resultsScreenDiv);
             hideExamMessage();
+            nextBtn.textContent = 'Next Page';
+            nextBtn.disabled = true;
         }
 
         async function showAuthScreen(scrollToAuth = false) {
@@ -731,50 +782,85 @@
 
         async function startQuiz() {
             await showQuizSubview(quizContentDiv);
-            renderQuestion();
+            renderQuestionPage();
         }
 
-        function renderQuestion() {
-            const currentQ = questions[currentIndex];
-            selectedAnswer = null;
-            nextBtn.disabled = true;
+        function renderQuestionPage() {
+            questionsPerPage = getQuestionsPerPage();
+            const totalPages = getTotalPages();
+            if (!totalPages) {
+                subjectBadge.innerText = 'ORT Test';
+                progressText.innerText = 'Page 0 of 0';
+                questionText.innerText = 'No questions available.';
+                optionsContainer.innerHTML = '';
+                refreshNextButtonState();
+                return;
+            }
 
-            subjectBadge.innerText = currentQ.subject || 'ORT Test';
-            progressText.innerText = `Question ${currentIndex + 1} of ${questions.length}`;
-            questionText.innerText = currentQ.question_text;
+            if (currentPageIndex >= totalPages) {
+                currentPageIndex = totalPages - 1;
+            }
+
+            const { startIndex, items } = getPageSlice(currentPageIndex);
+            const pageStart = startIndex + 1;
+            const pageEnd = startIndex + items.length;
+            const primarySubject = items[0]?.subject || 'ORT Test';
+            const hasMixedSubjects = items.some((question) => (question.subject || 'ORT Test') !== primarySubject);
+
+            subjectBadge.innerText = hasMixedSubjects ? 'ORT Mock' : primarySubject;
+            progressText.innerText = `Page ${currentPageIndex + 1} of ${totalPages} · Questions ${pageStart}-${pageEnd} of ${questions.length}`;
+            questionText.innerText = `Book Page ${currentPageIndex + 1}`;
             optionsContainer.innerHTML = '';
 
-            const options = currentQ.options || {};
-            for (const [key, value] of Object.entries(options)) {
-                if (!value) continue;
+            items.forEach((question, offset) => {
+                const questionId = String(question.id);
+                const questionNo = startIndex + offset + 1;
+                const questionCard = document.createElement('article');
+                questionCard.className = 'book-question-card rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.45)]';
+                questionCard.dataset.questionId = questionId;
 
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'quiz-option cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-blue-300 hover:bg-blue-50/70';
-                optionDiv.onclick = () => selectOption(key, optionDiv);
-                optionDiv.innerHTML = `
-                    <div class="option-letter bg-slate-200 text-slate-700">${key}</div>
-                    <span class="option-text text-slate-800">${value}</span>
+                const optionButtons = Object.entries(question.options || {})
+                    .filter(([, value]) => Boolean(value))
+                    .map(([key, value]) => `
+                        <button type="button" class="quiz-option w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-blue-300 hover:bg-blue-50/70" data-option-key="${key}" aria-pressed="false">
+                            <span class="option-letter bg-slate-200 text-slate-700">${key}</span>
+                            <span class="option-text text-slate-800">${value}</span>
+                        </button>
+                    `)
+                    .join('');
+
+                questionCard.innerHTML = `
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">Question ${questionNo}</span>
+                        <span class="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">${question.subject || 'ORT Test'}</span>
+                    </div>
+                    <h3 class="font-display mb-4 text-lg font-bold leading-relaxed text-slate-900">${question.question_text}</h3>
+                    <div class="space-y-2.5">
+                        ${optionButtons}
+                    </div>
                 `;
-                optionsContainer.appendChild(optionDiv);
-            }
+
+                const selectedOption = answersByQuestionId.get(questionId);
+                questionCard.querySelectorAll('[data-option-key]').forEach((button) => {
+                    const optionKey = button.dataset.optionKey;
+                    setOptionVisualState(button, optionKey === selectedOption);
+                    button.addEventListener('click', () => selectOption(questionId, optionKey, button));
+                });
+
+                optionsContainer.appendChild(questionCard);
+            });
+
+            refreshNextButtonState();
         }
 
-        function selectOption(key, element) {
-            selectedAnswer = key;
-            nextBtn.disabled = false;
-
-            const allOptions = optionsContainer.children;
-            for (const opt of allOptions) {
-                opt.classList.remove('border-blue-500', 'bg-blue-50/70', 'shadow-sm');
-                opt.classList.add('border-slate-200');
-                opt.querySelector('.option-letter').classList.remove('bg-blue-500', 'text-white');
-                opt.querySelector('.option-letter').classList.add('bg-slate-200', 'text-slate-700');
-            }
-
-            element.classList.remove('border-slate-200');
-            element.classList.add('border-blue-500', 'bg-blue-50/70', 'shadow-sm');
-            element.querySelector('.option-letter').classList.remove('bg-slate-200', 'text-slate-700');
-            element.querySelector('.option-letter').classList.add('bg-blue-500', 'text-white');
+        function selectOption(questionId, optionKey, element) {
+            answersByQuestionId.set(questionId, optionKey);
+            const questionCard = element.closest('[data-question-id]');
+            if (!questionCard) return;
+            questionCard.querySelectorAll('[data-option-key]').forEach((optionButton) => {
+                setOptionVisualState(optionButton, optionButton.dataset.optionKey === optionKey);
+            });
+            refreshNextButtonState();
         }
 
         async function showResults() {
@@ -877,13 +963,22 @@
         });
 
         nextBtn.addEventListener('click', async () => {
-            answers.push({ question_id: questions[currentIndex].id, selected: selectedAnswer });
-            if (currentIndex < questions.length - 1) {
-                currentIndex += 1;
-                renderQuestion();
-            } else {
-                await showResults();
+            if (nextBtn.disabled) return;
+            const totalPages = getTotalPages();
+            if (!totalPages) return;
+
+            if (currentPageIndex < totalPages - 1) {
+                currentPageIndex += 1;
+                renderQuestionPage();
+                quizContentDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
             }
+
+            answers = questions.map((question) => ({
+                question_id: question.id,
+                selected: answersByQuestionId.get(String(question.id)) || null
+            }));
+            await showResults();
         });
 
         restartBtn.addEventListener('click', async () => {
@@ -911,6 +1006,16 @@
 
         tabLogin.addEventListener('click', () => activateTab('login'));
         tabRegister.addEventListener('click', () => activateTab('register'));
+
+        window.addEventListener('resize', () => {
+            if (!questions.length || quizContentDiv.classList.contains('hidden')) return;
+            const nextPerPage = getQuestionsPerPage();
+            if (nextPerPage === questionsPerPage) return;
+            const firstVisibleQuestion = currentPageIndex * questionsPerPage;
+            questionsPerPage = nextPerPage;
+            currentPageIndex = Math.floor(firstVisibleQuestion / questionsPerPage);
+            renderQuestionPage();
+        });
 
         window.addEventListener('DOMContentLoaded', async () => {
             initializeTransitions();
