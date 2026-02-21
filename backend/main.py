@@ -385,11 +385,19 @@ async def get_questions(
     if cached_questions is not None:
         return cached_questions
 
-    response = (
-        supabase.table("questions")
-        .select("id,subject,question_text,options")
-        .execute()
-    )
-    questions = response.data or []
+    try:
+        response = (
+            supabase.table("questions")
+            .select("id,subject,question_text,options,correct_answer")
+            .execute()
+        )
+        questions = response.data or []
+    except Exception:
+        response = (
+            supabase.table("questions")
+            .select("id,subject,question_text,options")
+            .execute()
+        )
+        questions = response.data or []
     _set_cached_questions(cache_key, questions)
     return questions

@@ -132,7 +132,7 @@
             <div id="results-screen" class="fade-transition hidden py-12 text-center">
                 <h2 class="font-display mb-4 text-3xl font-extrabold text-slate-900">Test completed</h2>
                 <p id="results-summary" class="mb-8 text-lg text-slate-600">You answered all questions.</p>
-                <button id="restart-btn" class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Try Again</button>
+                <button id="restart-btn" class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Review Mistakes</button>
             </div>
         </div>
     </section>
@@ -154,6 +154,8 @@
         let questionsPerPage = 2;
         let answers = [];
         const answersByQuestionId = new Map();
+        let reviewMode = false;
+        let reviewQuestions = [];
         let authToken = localStorage.getItem(ACCESS_TOKEN_KEY);
         let selectedMockExam = Number(localStorage.getItem(SELECTED_EXAM_KEY)) || null;
         let pendingConfirmationEmail = '';
@@ -395,15 +397,58 @@
             return 2;
         }
 
+        function getRenderableQuestions() {
+            return reviewMode ? reviewQuestions : questions;
+        }
+
         function getTotalPages() {
-            if (!questions.length) return 0;
-            return Math.ceil(questions.length / questionsPerPage);
+            const renderableQuestions = getRenderableQuestions();
+            if (!renderableQuestions.length) return 0;
+            return Math.ceil(renderableQuestions.length / questionsPerPage);
         }
 
         function getPageSlice(pageIndex = currentPageIndex) {
+            const renderableQuestions = getRenderableQuestions();
             const startIndex = pageIndex * questionsPerPage;
-            const items = questions.slice(startIndex, startIndex + questionsPerPage);
+            const items = renderableQuestions.slice(startIndex, startIndex + questionsPerPage);
             return { startIndex, items };
+        }
+
+        function getCorrectOptionKey(question) {
+            const candidateKeys = ['correct_answer', 'correct_option', 'answer_key', 'answer'];
+            for (const key of candidateKeys) {
+                const value = question?.[key];
+                if (typeof value !== 'string') continue;
+                const normalized = value.trim().toUpperCase();
+                if (!normalized) continue;
+                return normalized[0];
+            }
+            return null;
+        }
+
+        function getScoreSummary() {
+            const total = questions.length;
+            let correct = 0;
+            for (const question of questions) {
+                const correctOption = getCorrectOptionKey(question);
+                const selectedOption = answersByQuestionId.get(String(question.id)) || null;
+                if (correctOption && selectedOption === correctOption) {
+                    correct += 1;
+                }
+            }
+            const scorePercent = total > 0 ? Math.round((correct / total) * 100) : 0;
+            return { correct, total, scorePercent };
+        }
+
+        function getReviewQuestions() {
+            const mistakes = questions.filter((question) => {
+                const selectedOption = answersByQuestionId.get(String(question.id)) || null;
+                const correctOption = getCorrectOptionKey(question);
+                if (!selectedOption) return true;
+                if (!correctOption) return true;
+                return selectedOption !== correctOption;
+            });
+            return mistakes.length > 0 ? mistakes : [...questions];
         }
 
         function setOptionVisualState(button, isSelected) {
@@ -419,11 +464,41 @@
                 : 'option-letter bg-slate-200 text-slate-700';
         }
 
+        function setReviewOptionVisualState(button, selectedOption, correctOption) {
+            if (!button) return;
+            const optionKey = button.dataset.optionKey;
+            button.className = 'quiz-option w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-left transition cursor-default';
+            button.setAttribute('aria-pressed', 'false');
+            button.disabled = true;
+
+            const letter = button.querySelector('.option-letter');
+            if (!letter) return;
+
+            if (correctOption && optionKey === correctOption) {
+                button.className = 'quiz-option w-full rounded-xl border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-left transition cursor-default';
+                letter.className = 'option-letter bg-emerald-500 text-white';
+                return;
+            }
+
+            if (selectedOption && optionKey === selectedOption && selectedOption !== correctOption) {
+                button.className = 'quiz-option w-full rounded-xl border border-rose-300 bg-rose-50/90 px-4 py-3 text-left transition cursor-default';
+                letter.className = 'option-letter bg-rose-500 text-white';
+                return;
+            }
+
+            letter.className = 'option-letter bg-slate-200 text-slate-700';
+        }
+
         function refreshNextButtonState() {
             const totalPages = getTotalPages();
             if (!totalPages) {
                 nextBtn.disabled = true;
                 nextBtn.textContent = 'Next Page';
+                return;
+            }
+            if (reviewMode) {
+                nextBtn.textContent = currentPageIndex < totalPages - 1 ? 'Next Page' : 'Back to Results';
+                nextBtn.disabled = false;
                 return;
             }
             nextBtn.textContent = currentPageIndex < totalPages - 1 ? 'Next Page' : 'Finish Exam';
@@ -436,6 +511,8 @@
             questionsPerPage = getQuestionsPerPage();
             answers = [];
             answersByQuestionId.clear();
+            reviewMode = false;
+            reviewQuestions = [];
         }
 
         function renderMockExamCards() {
@@ -632,6 +709,8 @@
             questionsPerPage = getQuestionsPerPage();
             answers = [];
             answersByQuestionId.clear();
+            reviewMode = false;
+            reviewQuestions = [];
             hideElementInstant(quizContainer);
             showElementInstant(loadingDiv);
             loadingDiv.innerHTML = '<h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>';
@@ -640,6 +719,7 @@
             hideExamMessage();
             nextBtn.textContent = 'Next Page';
             nextBtn.disabled = true;
+            restartBtn.textContent = 'Review Mistakes';
         }
 
         async function showAuthScreen(scrollToAuth = false) {
@@ -794,7 +874,8 @@
 
             items.forEach((question, offset) => {
                 const questionId = String(question.id);
-                const questionNo = startIndex + offset + 1;
+                const sourceIndex = questions.findIndex((item) => String(item.id) === questionId);
+                const questionNo = sourceIndex >= 0 ? sourceIndex + 1 : startIndex + offset + 1;
                 const questionCard = document.createElement('article');
                 questionCard.className = 'book-question-card rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_8px_28px_-24px_rgba(15,23,42,0.45)]';
                 questionCard.dataset.questionId = questionId;
@@ -820,11 +901,37 @@
                 `;
 
                 const selectedOption = answersByQuestionId.get(questionId);
+                const correctOption = getCorrectOptionKey(question);
                 questionCard.querySelectorAll('[data-option-key]').forEach((button) => {
                     const optionKey = button.dataset.optionKey;
-                    setOptionVisualState(button, optionKey === selectedOption);
-                    button.addEventListener('click', () => selectOption(questionId, optionKey, button));
+                    if (reviewMode) {
+                        setReviewOptionVisualState(button, selectedOption, correctOption);
+                    } else {
+                        setOptionVisualState(button, optionKey === selectedOption);
+                        button.addEventListener('click', () => selectOption(questionId, optionKey, button));
+                    }
                 });
+
+                if (reviewMode) {
+                    const reviewInfo = document.createElement('p');
+                    reviewInfo.className = 'mt-3 text-sm';
+                    if (!selectedOption && correctOption) {
+                        reviewInfo.classList.add('text-amber-700');
+                        reviewInfo.textContent = `Skipped. Correct answer: ${correctOption}.`;
+                    } else if (selectedOption && correctOption && selectedOption !== correctOption) {
+                        reviewInfo.classList.add('text-rose-700');
+                        reviewInfo.textContent = `Your answer: ${selectedOption}. Correct answer: ${correctOption}.`;
+                    } else if (!correctOption) {
+                        reviewInfo.classList.add('text-slate-600');
+                        reviewInfo.textContent = selectedOption
+                            ? `Your answer: ${selectedOption}. Correct answer is unavailable.`
+                            : 'Skipped. Correct answer is unavailable.';
+                    } else {
+                        reviewInfo.classList.add('text-emerald-700');
+                        reviewInfo.textContent = `Correct answer: ${correctOption}.`;
+                    }
+                    questionCard.appendChild(reviewInfo);
+                }
 
                 optionsContainer.appendChild(questionCard);
             });
@@ -833,6 +940,7 @@
         }
 
         function selectOption(questionId, optionKey, element) {
+            if (reviewMode) return;
             answersByQuestionId.set(questionId, optionKey);
             const questionCard = element.closest('[data-question-id]');
             if (!questionCard) return;
@@ -843,12 +951,11 @@
         }
 
         async function showResults() {
-            const skippedCount = getSkippedCount();
-            if (skippedCount > 0) {
-                resultsSummary.textContent = `You skipped ${skippedCount} question${skippedCount === 1 ? '' : 's'}.`;
-            } else {
-                resultsSummary.textContent = 'You answered all questions.';
-            }
+            reviewMode = false;
+            reviewQuestions = [];
+            const { correct, total, scorePercent } = getScoreSummary();
+            resultsSummary.textContent = `You have answered correctly ${correct}/${total} questions. Your score is: ${scorePercent}%.`;
+            restartBtn.textContent = 'Review Mistakes';
             await showQuizSubview(resultsScreenDiv);
         }
 
@@ -959,6 +1066,17 @@
             const totalPages = getTotalPages();
             if (!totalPages) return;
 
+            if (reviewMode) {
+                if (currentPageIndex < totalPages - 1) {
+                    currentPageIndex += 1;
+                    renderQuestionPage();
+                    quizContentDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    return;
+                }
+                await showResults();
+                return;
+            }
+
             if (currentPageIndex < totalPages - 1) {
                 currentPageIndex += 1;
                 renderQuestionPage();
@@ -982,15 +1100,13 @@
         });
 
         restartBtn.addEventListener('click', async () => {
-            if (!selectedMockExam) return;
-            try {
-                await fetchQuestions(selectedMockExam, {
-                    startQuizOnLoad: true,
-                    showLoader: !questionCache.has(selectedMockExam)
-                });
-            } catch {
-                // Error UI is handled inside fetchQuestions.
-            }
+            if (!questions.length) return;
+            reviewMode = true;
+            reviewQuestions = getReviewQuestions();
+            currentPageIndex = 0;
+            await showQuizSubview(quizContentDiv);
+            renderQuestionPage();
+            quizContentDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
 
         logoutBtn.addEventListener('click', async () => {
