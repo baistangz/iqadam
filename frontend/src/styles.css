@@ -23,10 +23,15 @@
             min-height: 100vh;
             background: linear-gradient(180deg, #f9fcff 0%, #f4f8ff 100%);
             overflow-x: hidden;
+            text-rendering: geometricPrecision;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .font-display {
             font-family: "Sora", sans-serif;
+            letter-spacing: -0.01em;
+            text-rendering: geometricPrecision;
         }
 
         .fade-transition {
@@ -160,18 +165,18 @@
 
         .brand-mark {
             display: inline-block;
-            font-family: "Sora", sans-serif;
-            font-size: 1.5rem;
-            line-height: 1.2;
-            font-weight: 800;
-            letter-spacing: 0;
-            color: #0f172a;
+            font-family: "Yeseva One", "Sora", serif;
+            font-size: 1.25rem;
+            line-height: 1.15;
+            font-weight: 400;
+            letter-spacing: 0.015em;
+            color: #111827;
             text-shadow: none;
+            text-rendering: geometricPrecision;
         }
 
         @media (min-width: 768px) {
             .brand-mark {
-                font-size: 2rem;
+                font-size: 1.5rem;
             }
         }
-
