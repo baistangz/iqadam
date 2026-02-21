@@ -199,27 +199,35 @@
 
         .kalpak-avatar {
             position: relative;
-            width: 2.2rem;
-            height: 2.2rem;
+            width: clamp(2rem, 2.5vw, 2.25rem);
+            height: clamp(2rem, 2.5vw, 2.25rem);
+            min-width: 2rem;
+            min-height: 2rem;
+            flex-shrink: 0;
             border-radius: 9999px;
-            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: linear-gradient(180deg, #eef2ff 0%, #dbeafe 100%);
+            border: 1px solid rgba(71, 85, 105, 0.35);
             display: inline-flex;
             align-items: flex-end;
             justify-content: center;
             overflow: hidden;
+            box-shadow: 0 4px 10px -8px rgba(15, 23, 42, 0.95);
+            contain: layout paint;
         }
 
         .kalpak-head {
+            position: relative;
+            z-index: 1;
             width: 1.05rem;
             height: 1.05rem;
             border-radius: 9999px;
-            background: #f2d1b6;
+            background: #efc7a7;
             margin-bottom: 0.12rem;
         }
 
         .kalpak-hat {
             position: absolute;
+            z-index: 2;
             top: 0.1rem;
             left: 50%;
             width: 1.45rem;
@@ -259,6 +267,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.52rem;
+            min-height: 2.7rem;
             border-radius: 0.9rem;
             border: 1px solid rgba(148, 163, 184, 0.45);
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -267,6 +276,7 @@
             font-size: 0.95rem;
             font-weight: 700;
             transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+            contain: layout paint;
         }
 
         .mode-btn:hover {
@@ -284,8 +294,8 @@
         }
 
         .mode-btn-icon {
-            width: 1.05rem;
-            height: 1.05rem;
+            width: 0.82rem;
+            height: 0.82rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -299,6 +309,15 @@
 
         .mode-btn-label {
             line-height: 1;
+        }
+
+        @media (hover: none) {
+            .mode-btn:hover {
+                border-color: rgba(148, 163, 184, 0.45);
+                background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+                color: #334155;
+                transform: none;
+            }
         }
 
         .book-page-shell {
