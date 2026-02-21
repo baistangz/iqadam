@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iQADAM</title>
+    <title>iQadam</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Yeseva+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <link rel="stylesheet" href="/assets/styles.css">
 </head>
@@ -15,7 +15,7 @@
         <div class="kyrgyz-sun"></div>
         <div class="relative z-10 mx-auto flex min-h-[78vh] max-w-6xl items-center">
             <div class="max-w-2xl rounded-3xl border border-blue-100 bg-white/70 p-7 shadow-[0_32px_90px_-48px_rgba(37,99,235,0.55)] backdrop-blur-sm md:p-10">
-                <p class="brand-mark">iQADAM</p>
+                <p class="brand-mark">iQadam</p>
                 <h1 class="font-display mt-4 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-5xl">
                     Prepare for ORT with full-length mock exams
                 </h1>
@@ -735,11 +735,11 @@
                 if (!value) continue;
 
                 const optionDiv = document.createElement('div');
-                optionDiv.className = 'flex cursor-pointer items-start gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-blue-300 hover:bg-blue-50/70';
+                optionDiv.className = 'flex cursor-pointer items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-blue-300 hover:bg-blue-50/70';
                 optionDiv.onclick = () => selectOption(key, optionDiv);
                 optionDiv.innerHTML = `
-                    <div class="option-letter mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-700">${key}</div>
-                    <span class="pt-0.5 font-medium text-slate-800">${value}</span>
+                    <div class="option-letter flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-700">${key}</div>
+                    <span class="block flex-1 text-left font-medium leading-6 text-slate-800">${value}</span>
                 `;
                 optionsContainer.appendChild(optionDiv);
             }
