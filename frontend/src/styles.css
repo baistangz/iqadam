@@ -182,6 +182,53 @@
             }
         }
 
+        .kalpak-avatar {
+            position: relative;
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 9999px;
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            display: inline-flex;
+            align-items: flex-end;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .kalpak-head {
+            width: 1.05rem;
+            height: 1.05rem;
+            border-radius: 9999px;
+            background: #f2d1b6;
+            margin-bottom: 0.12rem;
+        }
+
+        .kalpak-hat {
+            position: absolute;
+            top: 0.1rem;
+            left: 50%;
+            width: 1.45rem;
+            height: 0.92rem;
+            transform: translateX(-50%);
+            border-radius: 0.6rem 0.6rem 0.35rem 0.35rem;
+            background:
+                linear-gradient(180deg, #ffffff 0%, #e2e8f0 90%);
+            border: 1px solid rgba(100, 116, 139, 0.45);
+            box-shadow: inset 0 -2px 0 rgba(51, 65, 85, 0.16);
+        }
+
+        .kalpak-hat::after {
+            content: "";
+            position: absolute;
+            top: 0.1rem;
+            bottom: 0.1rem;
+            left: 50%;
+            width: 2px;
+            transform: translateX(-50%);
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 9999px;
+        }
+
         .book-page-shell {
             position: relative;
             display: grid;
