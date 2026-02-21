@@ -53,32 +53,32 @@
                 <button id="tab-register" class="rounded-lg px-4 py-2.5 text-sm font-medium text-blue-700 transition">Register</button>
             </div>
 
-            <form id="login-form" class="space-y-4">
+            <form id="login-form" class="space-y-4" autocomplete="off">
                 <div>
                     <label for="login-email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
-                    <input id="login-email" type="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="you@example.com">
+                    <input id="login-email" type="email" autocomplete="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="you@example.com">
                 </div>
                 <div>
                     <label for="login-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-                    <input id="login-password" type="password" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="••••••••">
+                    <input id="login-password" type="password" autocomplete="new-password" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="••••••••">
                 </div>
                 <div id="login-captcha" class="pt-1"></div>
                 <button type="submit" class="font-display w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Log In</button>
             </form>
 
-            <form id="register-form" class="hidden space-y-4">
+            <form id="register-form" class="hidden space-y-4" autocomplete="off">
                 <div>
                     <label for="register-email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
                     <input id="register-email" type="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="you@example.com">
                 </div>
                 <div>
                     <label for="register-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-                    <input id="register-password" type="password" minlength="8" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Strong password">
+                    <input id="register-password" type="password" autocomplete="new-password" minlength="8" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Strong password">
                     <p class="mt-2 text-xs text-slate-500">Use 8+ chars with upper, lower, number, and special character.</p>
                 </div>
                 <div>
                     <label for="register-confirm-password" class="mb-1.5 block text-sm font-medium text-slate-700">Confirm Password</label>
-                    <input id="register-confirm-password" type="password" minlength="8" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Repeat your password">
+                    <input id="register-confirm-password" type="password" autocomplete="new-password" minlength="8" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Repeat your password">
                 </div>
                 <div id="register-captcha" class="pt-1"></div>
                 <button type="submit" class="font-display w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Create Account</button>
@@ -575,6 +575,20 @@
             localStorage.removeItem(USER_EMAIL_KEY);
         }
 
+        function resetAuthForms() {
+            loginForm.reset();
+            registerForm.reset();
+            pendingConfirmationEmail = '';
+            hideResendConfirmation();
+            resetAuthMessage();
+            const loginPassword = document.getElementById('login-password');
+            const registerPassword = document.getElementById('register-password');
+            const registerConfirmPassword = document.getElementById('register-confirm-password');
+            if (loginPassword) loginPassword.value = '';
+            if (registerPassword) registerPassword.value = '';
+            if (registerConfirmPassword) registerConfirmPassword.value = '';
+        }
+
         function resetQuizState() {
             questions = [];
             currentIndex = 0;
@@ -888,6 +902,7 @@
             clearSession();
             selectedMockExam = null;
             localStorage.removeItem(SELECTED_EXAM_KEY);
+            resetAuthForms();
             activateTab('login');
             await showAuthScreen(true);
             resetCaptcha('login');
