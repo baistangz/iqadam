@@ -843,16 +843,20 @@
         }
 
         async function showResults() {
-            const answeredCount = questions.reduce((total, question) => (
-                answersByQuestionId.has(String(question.id)) ? total + 1 : total
-            ), 0);
-            const skippedCount = Math.max(0, questions.length - answeredCount);
+            const skippedCount = getSkippedCount();
             if (skippedCount > 0) {
                 resultsSummary.textContent = `You skipped ${skippedCount} question${skippedCount === 1 ? '' : 's'}.`;
             } else {
                 resultsSummary.textContent = 'You answered all questions.';
             }
             await showQuizSubview(resultsScreenDiv);
+        }
+
+        function getSkippedCount() {
+            const answeredCount = questions.reduce((total, question) => (
+                answersByQuestionId.has(String(question.id)) ? total + 1 : total
+            ), 0);
+            return Math.max(0, questions.length - answeredCount);
         }
 
         loginForm.addEventListener('submit', async (event) => {
@@ -960,6 +964,14 @@
                 renderQuestionPage();
                 quizContentDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
+            }
+
+            const skippedCount = getSkippedCount();
+            if (skippedCount > 0) {
+                const confirmed = window.confirm(
+                    `You skipped ${skippedCount} question${skippedCount === 1 ? '' : 's'}. Are you sure you want to finish the exam?`
+                );
+                if (!confirmed) return;
             }
 
             answers = questions.map((question) => ({
