@@ -244,6 +244,38 @@
             border-radius: 9999px;
         }
 
+        .exam-mode-panel {
+            border-color: rgba(96, 165, 250, 0.55);
+            background:
+                radial-gradient(120% 120% at 12% 0%, rgba(191, 219, 254, 0.7) 0%, transparent 55%),
+                linear-gradient(180deg, rgba(239, 246, 255, 0.95) 0%, rgba(219, 234, 254, 0.9) 100%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                0 18px 36px -28px rgba(30, 64, 175, 0.55);
+        }
+
+        .exam-mode-kicker {
+            font-family: "Sora", sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #1d4ed8;
+        }
+
+        .exam-mode-title {
+            margin-top: 0.22rem;
+            font-family: "Sora", sans-serif;
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #0f172a;
+        }
+
+        .exam-mode-title span {
+            color: #1d4ed8;
+        }
+
         .book-page-shell {
             position: relative;
             display: grid;

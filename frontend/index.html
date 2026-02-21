@@ -110,8 +110,9 @@
                 <h3 class="font-display text-2xl font-extrabold text-slate-900">Choose Your Mock Exam</h3>
             </div>
             <div id="exam-grid" class="space-y-2.5"></div>
-            <div id="exam-mode-panel" class="mt-4 hidden rounded-xl border border-blue-200 bg-blue-50 p-4">
-                <p class="text-sm font-semibold text-blue-900">Mock Exam <span id="selected-exam-text">19</span> selected. Choose mode:</p>
+            <div id="exam-mode-panel" class="exam-mode-panel mt-4 hidden rounded-2xl border p-4 md:p-5">
+                <p class="exam-mode-kicker">Ready To Start</p>
+                <p class="exam-mode-title">Mock Exam <span id="selected-exam-text">19</span></p>
                 <div class="mt-3 grid gap-2 sm:grid-cols-2">
                     <button id="mode-no-timer-btn" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-100">No Timer</button>
                     <button id="mode-timer-btn" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:bg-blue-100">With Timer (60 min)</button>
@@ -674,7 +675,7 @@
             }
 
             showExamModePanel(examNo);
-            showExamMessage(`Mock Exam ${examNo} selected. Choose with timer or no timer to start.`, 'info');
+            hideExamMessage();
             void fetchQuestions(examNo, { startQuizOnLoad: false, showLoader: false }).catch(() => {});
         }
 
@@ -902,10 +903,10 @@
             resetQuizState();
             if (selectedAvailableExam) {
                 showExamModePanel(selectedAvailableExam);
-                showExamMessage(`Mock Exam ${selectedAvailableExam} selected. Choose with timer or no timer.`, 'info');
+                hideExamMessage();
             } else {
                 hideExamModePanel();
-                showExamMessage('Select a mock exam from the list, then choose with timer or no timer.', 'info');
+                hideExamMessage();
             }
             if (preloadExam) {
                 void fetchQuestions(preloadExam, { startQuizOnLoad: false, showLoader: false }).catch(() => {});
