@@ -18,6 +18,7 @@
             --blue-600: #2563eb;
             --blue-700: #1d4ed8;
             --slate-900: #0f172a;
+            --ui-fade-duration: 300ms;
         }
 
         html {
@@ -34,6 +35,11 @@
 
         .font-display {
             font-family: "Sora", sans-serif;
+        }
+
+        .fade-transition {
+            transition: opacity var(--ui-fade-duration) ease-in-out;
+            will-change: opacity;
         }
 
         .hero {
@@ -180,7 +186,7 @@
     </style>
 </head>
 <body>
-    <section class="hero min-h-[100svh] px-4 pt-14 md:px-8 md:pt-16" id="welcome-section">
+    <section class="hero fade-transition min-h-[100svh] px-4 pt-14 md:px-8 md:pt-16" id="welcome-section">
         <div class="kyrgyz-sun"></div>
         <div class="relative z-10 mx-auto flex min-h-[78vh] max-w-6xl items-center">
             <div class="max-w-2xl rounded-3xl border border-blue-100 bg-white/70 p-7 shadow-[0_32px_90px_-48px_rgba(37,99,235,0.55)] backdrop-blur-sm md:p-10">
@@ -213,7 +219,7 @@
         </div>
     </section>
 
-    <section id="auth-section" class="auth-lake relative min-h-[58svh] overflow-hidden px-4 pb-6 pt-6 md:min-h-[54svh] md:px-8 md:pb-8 md:pt-8">
+    <section id="auth-section" class="auth-lake fade-transition relative min-h-[58svh] overflow-hidden px-4 pb-6 pt-6 md:min-h-[54svh] md:px-8 md:pb-8 md:pt-8">
         <div id="auth-screen" class="relative z-10 mx-auto mt-10 max-w-md rounded-2xl border border-blue-100 bg-white/96 p-6 shadow-lg backdrop-blur-sm md:mt-12 md:p-8">
             <p class="font-display text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">Account</p>
             <h2 class="font-display mt-2 text-2xl font-extrabold text-slate-900">Login or Register</h2>
@@ -263,7 +269,7 @@
         </div>
     </section>
 
-    <section id="quiz-screen" class="hidden mx-auto max-w-6xl px-4 pb-16 md:px-8">
+    <section id="quiz-screen" class="fade-transition hidden mx-auto max-w-6xl px-4 pb-16 md:px-8">
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm">
             <div>
                 <p class="font-display text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Signed In</p>
@@ -284,12 +290,12 @@
             <p id="exam-message" class="mt-4 hidden rounded-xl border px-4 py-3 text-sm"></p>
         </div>
 
-        <div class="hidden rounded-2xl border border-blue-100 bg-white p-6 shadow-sm md:p-8" id="quiz-container">
-            <div id="loading" class="py-12 text-center">
+        <div class="fade-transition hidden rounded-2xl border border-blue-100 bg-white p-6 shadow-sm md:p-8" id="quiz-container">
+            <div id="loading" class="fade-transition py-12 text-center">
                 <h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>
             </div>
 
-            <div id="quiz-content" class="hidden">
+            <div id="quiz-content" class="fade-transition hidden">
                 <div class="mb-6 flex items-center justify-between gap-4">
                     <span id="subject-badge" class="rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-blue-800">Subject</span>
                     <span id="progress-text" class="text-sm font-semibold text-slate-500">Question 1 of 30</span>
@@ -304,7 +310,7 @@
                 </div>
             </div>
 
-            <div id="results-screen" class="hidden py-12 text-center">
+            <div id="results-screen" class="fade-transition hidden py-12 text-center">
                 <h2 class="font-display mb-4 text-3xl font-extrabold text-slate-900">Test completed</h2>
                 <p class="mb-8 text-lg text-slate-600">You answered all questions.</p>
                 <button id="restart-btn" class="font-display rounded-xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700">Try Again</button>
@@ -369,6 +375,109 @@
         const subjectBadge = document.getElementById('subject-badge');
         const nextBtn = document.getElementById('next-btn');
         const restartBtn = document.getElementById('restart-btn');
+        const ROOT_SCREEN_IDS = ['welcome-section', 'auth-section', 'quiz-screen'];
+        const FADE_DURATION_MS = 300;
+        const fadeState = new WeakMap();
+        let activeScreenId = ROOT_SCREEN_IDS.find((id) => {
+            const el = document.getElementById(id);
+            return el && !el.classList.contains('hidden');
+        }) || 'welcome-section';
+
+        function wait(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function markFadeState(element) {
+            const next = (fadeState.get(element) || 0) + 1;
+            fadeState.set(element, next);
+            return next;
+        }
+
+        function initializeFadeElement(element) {
+            if (!element) return;
+            element.classList.add('fade-transition');
+            element.style.opacity = element.classList.contains('hidden') ? '0' : '1';
+        }
+
+        function showElementInstant(element) {
+            if (!element) return;
+            markFadeState(element);
+            element.classList.remove('hidden');
+            element.style.opacity = '1';
+        }
+
+        function hideElementInstant(element) {
+            if (!element) return;
+            markFadeState(element);
+            element.classList.add('hidden');
+            element.style.opacity = '0';
+        }
+
+        async function fadeInElement(element) {
+            if (!element) return;
+            if (!element.classList.contains('hidden') && element.style.opacity !== '0') {
+                element.style.opacity = '1';
+                return;
+            }
+            const token = markFadeState(element);
+            element.classList.remove('hidden');
+            element.style.opacity = '0';
+            void element.offsetWidth;
+            element.style.opacity = '1';
+            await wait(FADE_DURATION_MS);
+            if (fadeState.get(element) !== token) return;
+            element.style.opacity = '1';
+        }
+
+        async function fadeOutElement(element) {
+            if (!element || element.classList.contains('hidden')) return;
+            const token = markFadeState(element);
+            element.style.opacity = '0';
+            await wait(FADE_DURATION_MS);
+            if (fadeState.get(element) !== token) return;
+            element.classList.add('hidden');
+        }
+
+        async function showScreen(screenId) {
+            const target = document.getElementById(screenId);
+            if (!target) return;
+            if (activeScreenId === screenId && !target.classList.contains('hidden') && target.style.opacity !== '0') {
+                return;
+            }
+
+            const fallbackCurrentId = ROOT_SCREEN_IDS.find((id) => {
+                if (id === screenId) return false;
+                const el = document.getElementById(id);
+                return el && !el.classList.contains('hidden');
+            });
+            const currentId = activeScreenId !== screenId ? activeScreenId : fallbackCurrentId;
+            const current = currentId ? document.getElementById(currentId) : null;
+
+            if (current && current !== target) {
+                await fadeOutElement(current);
+            }
+            await fadeInElement(target);
+            activeScreenId = screenId;
+        }
+
+        async function showQuizSubview(targetElement) {
+            const subviews = [loadingDiv, quizContentDiv, resultsScreenDiv];
+            await Promise.all(subviews.map((element) => (
+                element === targetElement ? fadeInElement(element) : fadeOutElement(element)
+            )));
+        }
+
+        function initializeTransitions() {
+            [
+                welcomeSection,
+                authSection,
+                quizScreen,
+                quizContainer,
+                loadingDiv,
+                quizContentDiv,
+                resultsScreenDiv
+            ].forEach(initializeFadeElement);
+        }
 
         function normalizeEmail(value) {
             return value.trim().toLowerCase();
@@ -416,12 +525,12 @@
 
         function hideResendConfirmation() {
             pendingConfirmationEmail = '';
-            resendWrap.classList.add('hidden');
+            hideElementInstant(resendWrap);
         }
 
         function showResendConfirmation(email) {
             pendingConfirmationEmail = normalizeEmail(email || '');
-            resendWrap.classList.remove('hidden');
+            showElementInstant(resendWrap);
         }
 
         function resetCaptcha(widgetType) {
@@ -437,7 +546,8 @@
         }
 
         function showExamMessage(text, type = 'info') {
-            examMessage.classList.remove('hidden', 'border-rose-200', 'bg-rose-50', 'text-rose-700', 'border-blue-200', 'bg-blue-50', 'text-blue-700', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+            showElementInstant(examMessage);
+            examMessage.classList.remove('border-rose-200', 'bg-rose-50', 'text-rose-700', 'border-blue-200', 'bg-blue-50', 'text-blue-700', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
             if (type === 'error') {
                 examMessage.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
             } else if (type === 'success') {
@@ -449,7 +559,7 @@
         }
 
         function hideExamMessage() {
-            examMessage.classList.add('hidden');
+            hideElementInstant(examMessage);
             examMessage.textContent = '';
         }
 
@@ -543,7 +653,8 @@
         }
 
         function showAuthMessage(text, type = 'error') {
-            authMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'border-red-200', 'bg-green-100', 'text-green-700', 'border-green-200', 'bg-blue-100', 'text-blue-700', 'border-blue-200');
+            showElementInstant(authMessage);
+            authMessage.classList.remove('bg-red-100', 'text-red-700', 'border-red-200', 'bg-green-100', 'text-green-700', 'border-green-200', 'bg-blue-100', 'text-blue-700', 'border-blue-200');
             if (type === 'success') {
                 authMessage.classList.add('bg-green-100', 'text-green-700', 'border', 'border-green-200');
             } else if (type === 'info') {
@@ -555,7 +666,7 @@
         }
 
         function resetAuthMessage() {
-            authMessage.classList.add('hidden');
+            hideElementInstant(authMessage);
             authMessage.textContent = '';
         }
 
@@ -570,8 +681,13 @@
                 ? 'rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition'
                 : 'rounded-lg px-4 py-2.5 text-sm font-medium text-blue-700 transition';
 
-            loginForm.classList.toggle('hidden', !isLogin);
-            registerForm.classList.toggle('hidden', isLogin);
+            if (isLogin) {
+                showElementInstant(loginForm);
+                hideElementInstant(registerForm);
+            } else {
+                showElementInstant(registerForm);
+                hideElementInstant(loginForm);
+            }
             hideResendConfirmation();
             resetAuthMessage();
             if (captchaEnabled) {
@@ -620,32 +736,34 @@
             selectedAnswer = null;
             answers = [];
             isLoadingQuestions = false;
-            quizContainer.classList.add('hidden');
-            loadingDiv.classList.remove('hidden');
+            hideElementInstant(quizContainer);
+            showElementInstant(loadingDiv);
             loadingDiv.innerHTML = '<h2 class="font-display animate-pulse text-2xl font-bold text-slate-600">Loading questions...</h2>';
-            quizContentDiv.classList.add('hidden');
-            resultsScreenDiv.classList.add('hidden');
+            hideElementInstant(quizContentDiv);
+            hideElementInstant(resultsScreenDiv);
             hideExamMessage();
         }
 
-        function showAuthScreen(scrollToAuth = false) {
+        async function showAuthScreen(scrollToAuth = false) {
             resetQuizState();
-            welcomeSection.classList.remove('hidden');
-            quizScreen.classList.add('hidden');
-            authSection.classList.remove('hidden');
+            await Promise.all([
+                showScreen('welcome-section'),
+                fadeInElement(authSection)
+            ]);
             if (scrollToAuth) {
                 authScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
-        function showQuizScreen(email) {
+        async function showQuizScreen(email) {
             userEmail.textContent = email || localStorage.getItem(USER_EMAIL_KEY) || '-';
             hideResendConfirmation();
             resetAuthMessage();
-            welcomeSection.classList.add('hidden');
-            authSection.classList.add('hidden');
-            quizScreen.classList.remove('hidden');
-            examSelector.classList.remove('hidden');
+            await Promise.all([
+                showScreen('quiz-screen'),
+                fadeOutElement(authSection)
+            ]);
+            showElementInstant(examSelector);
             renderMockExamCards();
 
             if (!selectedMockExam || !AVAILABLE_EXAMS.has(selectedMockExam)) {
@@ -665,7 +783,7 @@
                 const data = await apiRequest('/api/auth/me', {
                     headers: { Authorization: `Bearer ${authToken}` }
                 });
-                showQuizScreen(data.user?.email);
+                await showQuizScreen(data.user?.email);
                 return true;
             } catch {
                 clearSession();
@@ -686,10 +804,8 @@
             if (isLoadingQuestions) return;
 
             isLoadingQuestions = true;
-            quizContainer.classList.remove('hidden');
-            loadingDiv.classList.remove('hidden');
-            quizContentDiv.classList.add('hidden');
-            resultsScreenDiv.classList.add('hidden');
+            await fadeInElement(quizContainer);
+            await showQuizSubview(loadingDiv);
             hideExamMessage();
 
             try {
@@ -706,7 +822,7 @@
                     questions = data;
                     currentIndex = 0;
                     answers = [];
-                    startQuiz();
+                    await startQuiz();
                     showExamMessage(`Mock Exam ${selectedMockExam} loaded.`, 'success');
                 } else {
                     loadingDiv.innerHTML = `<p class="text-rose-500">No questions found for Mock Exam ${selectedMockExam}.</p>`;
@@ -718,10 +834,8 @@
             }
         }
 
-        function startQuiz() {
-            loadingDiv.classList.add('hidden');
-            quizContentDiv.classList.remove('hidden');
-            resultsScreenDiv.classList.add('hidden');
+        async function startQuiz() {
+            await showQuizSubview(quizContentDiv);
             renderQuestion();
         }
 
@@ -768,9 +882,8 @@
             element.querySelector('.option-letter').classList.add('bg-blue-500', 'text-white');
         }
 
-        function showResults() {
-            quizContentDiv.classList.add('hidden');
-            resultsScreenDiv.classList.remove('hidden');
+        async function showResults() {
+            await showQuizSubview(resultsScreenDiv);
         }
 
         loginForm.addEventListener('submit', async (event) => {
@@ -793,7 +906,7 @@
                 });
 
                 saveSession(data.session, data.user?.email || email);
-                showQuizScreen(data.user?.email || email);
+                await showQuizScreen(data.user?.email || email);
             } catch (error) {
                 showAuthMessage(error.message || 'Login failed.');
                 if ((error.message || '').toLowerCase().includes('not confirmed')) {
@@ -830,7 +943,7 @@
                 if (data.session && data.session.access_token) {
                     saveSession(data.session, data.user?.email || email);
                     showAuthMessage('Account created and logged in.', 'success');
-                    showQuizScreen(data.user?.email || email);
+                    await showQuizScreen(data.user?.email || email);
                     return;
                 }
 
@@ -868,13 +981,13 @@
             }
         });
 
-        nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', async () => {
             answers.push({ question_id: questions[currentIndex].id, selected: selectedAnswer });
             if (currentIndex < questions.length - 1) {
                 currentIndex += 1;
                 renderQuestion();
             } else {
-                showResults();
+                await showResults();
             }
         });
 
@@ -883,12 +996,12 @@
             fetchQuestions();
         });
 
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
             clearSession();
             selectedMockExam = null;
             localStorage.removeItem(SELECTED_EXAM_KEY);
             activateTab('login');
-            showAuthScreen(true);
+            await showAuthScreen(true);
             resetCaptcha('login');
             resetCaptcha('register');
         });
@@ -897,11 +1010,12 @@
         tabRegister.addEventListener('click', () => activateTab('register'));
 
         window.addEventListener('DOMContentLoaded', async () => {
+            initializeTransitions();
             await loadAuthConfig();
             await renderCaptchaWidgets();
             activateTab('login');
             const sessionValid = await verifyExistingSession();
-            if (!sessionValid) showAuthScreen(false);
+            if (!sessionValid) await showAuthScreen(false);
         });
     </script>
 </body>
