@@ -735,11 +735,11 @@
                 if (!value) continue;
 
                 const optionDiv = document.createElement('div');
-                optionDiv.className = 'flex cursor-pointer items-center gap-3.5 rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-blue-300 hover:bg-blue-50/70';
+                optionDiv.className = 'quiz-option cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-blue-300 hover:bg-blue-50/70';
                 optionDiv.onclick = () => selectOption(key, optionDiv);
                 optionDiv.innerHTML = `
-                    <div class="option-letter flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-700">${key}</div>
-                    <span class="block flex-1 text-left font-medium leading-6 text-slate-800">${value}</span>
+                    <div class="option-letter bg-slate-200 text-slate-700">${key}</div>
+                    <span class="option-text text-slate-800">${value}</span>
                 `;
                 optionsContainer.appendChild(optionDiv);
             }

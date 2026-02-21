@@ -166,17 +166,45 @@
         .brand-mark {
             display: inline-block;
             font-family: "Sora", sans-serif;
-            font-size: 1.25rem;
-            line-height: 1.15;
-            font-weight: 800;
-            letter-spacing: -0.01em;
-            color: #111827;
+            font-size: 1.15rem;
+            line-height: 1.1;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #0b1f3a;
             text-shadow: none;
             text-rendering: geometricPrecision;
+            font-variant-ligatures: none;
         }
 
         @media (min-width: 768px) {
             .brand-mark {
-                font-size: 1.5rem;
+                font-size: 1.35rem;
             }
+        }
+
+        .quiz-option {
+            display: grid;
+            grid-template-columns: 2.5rem minmax(0, 1fr);
+            align-items: start;
+            column-gap: 1.05rem;
+        }
+
+        .quiz-option .option-letter {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .quiz-option .option-text {
+            display: block;
+            padding-top: 0.38rem;
+            text-align: left;
+            font-weight: 500;
+            line-height: 1.55;
+            letter-spacing: 0.002em;
         }
