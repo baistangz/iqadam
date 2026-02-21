@@ -1,5 +1,7 @@
 import os
 import re
+from threading import Lock
+from time import time
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, Query
@@ -18,11 +20,14 @@ CAPTCHA_REQUIRED = os.getenv("CAPTCHA_REQUIRED", "true").lower() == "true"
 CAPTCHA_ENABLED = CAPTCHA_REQUIRED and bool(CAPTCHA_SITE_KEY)
 
 EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+QUESTIONS_CACHE_TTL_SECONDS = 600  # 10 minutes
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Missing Supabase credentials in environment variables.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+_questions_cache: dict[str, tuple[float, list[dict]]] = {}
+_questions_cache_lock = Lock()
 
 app = FastAPI(title="ORT Prep Backend")
 # main.py
@@ -191,6 +196,32 @@ def serialize_session(session) -> dict:
     }
 
 
+def _questions_cache_key(mock_exam: int | None) -> str:
+    return f"mock_exam:{mock_exam}" if mock_exam is not None else "mock_exam:all"
+
+
+def _get_cached_questions(cache_key: str) -> list[dict] | None:
+    with _questions_cache_lock:
+        cached_entry = _questions_cache.get(cache_key)
+        if not cached_entry:
+            return None
+        cached_at, cached_data = cached_entry
+        if time() - cached_at >= QUESTIONS_CACHE_TTL_SECONDS:
+            _questions_cache.pop(cache_key, None)
+            return None
+        return cached_data
+
+
+def _set_cached_questions(cache_key: str, data: list[dict]) -> None:
+    with _questions_cache_lock:
+        _questions_cache[cache_key] = (time(), data)
+
+
+def _clear_questions_cache() -> None:
+    with _questions_cache_lock:
+        _questions_cache.clear()
+
+
 @app.post("/api/auth/register")
 async def register_user(credentials: RegisterCredentials):
     try:
@@ -331,6 +362,7 @@ async def upload_questions(questions: list[QuestionInsert]):
         ]
 
         response = supabase.table("questions").insert(data_to_insert).execute()
+        _clear_questions_cache()
         return {
             "status": "success",
             "message": f"Successfully inserted {len(response.data)} questions.",
@@ -347,5 +379,17 @@ async def get_questions(
 ):
     if mock_exam is not None and mock_exam != 19:
         return []
-    response = supabase.table("questions").select("*").execute()
-    return response.data
+
+    cache_key = _questions_cache_key(mock_exam)
+    cached_questions = _get_cached_questions(cache_key)
+    if cached_questions is not None:
+        return cached_questions
+
+    response = (
+        supabase.table("questions")
+        .select("id,subject,question_text,options")
+        .execute()
+    )
+    questions = response.data or []
+    _set_cached_questions(cache_key, questions)
+    return questions
